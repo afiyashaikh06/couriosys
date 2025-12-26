@@ -1,0 +1,134 @@
+{% extends "layout.html" %}
+
+{% block title %}Notifications - FastShip Courier{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <h2>Customer Panel</h2>
+            <p>Welcome, {{ session.name }}</p>
+        </div>
+        <nav class="sidebar-nav">
+            <ul>
+                <li>
+                    <a href="{{ url_for('customer_dashboard') }}">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('book_parcel') }}">
+                        <i class="fas fa-box"></i>Book New Parcel
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('customer_parcels') }}">
+                        <i class="fas fa-list"></i> My Parcels
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('customer_track') }}">
+                        <i class="fas fa-map-marker-alt"></i> Track Parcel
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('customer_notifications') }}" class="active">
+                        <i class="fas fa-bell"></i> Notifications
+                        {% if notifications|selectattr('read', 'equalto', false)|list|length > 0 %}
+                        <span class="notification-badge">
+                            {{ notifications|selectattr('read', 'equalto', false)|list|length }}
+                        </span>
+                        {% endif %}
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('customer_profile') }}">
+                        <i class="fas fa-user"></i> My Profile
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('logout') }}">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+   <main class="main-content">
+    <div class="content-header">
+        <div>
+            <h1>Notifications</h1>
+            <p class="notifications-header-text">
+                Stay updated with your parcel status and alerts
+            </p>
+        </div>
+        <button class="btn" onclick="markAllAsRead()">
+            <i class="fas fa-check-double"></i> Mark All as Read
+        </button>
+    </div>
+
+    <div class="notifications-container">
+            {% if notifications|length == 0 %}
+            <div class="empty-state">
+                <i class="fas fa-bell-slash"></i>
+                <h3>No notifications yet</h3>
+                <p>You'll see important updates about your parcels here.</p>
+                <a href="{{ url_for('book_parcel') }}" class="btn ">
+                    <i class="fas fa-box"></i> Book Your First Parcel
+                </a>
+            </div>
+            {% else %}
+            <div class="notifications-list">
+                {% for note in notifications %}
+                <div class="notification-card {% if not note.read %}unread{% endif %}">
+                    <div class="notification-icon">
+                        {% if note.type == 'booking' %}
+                        <i class="fas fa-calendar-check"></i>
+                        {% elif note.type == 'status_update' %}
+                        <i class="fas fa-truck-moving"></i>
+                        {% elif note.type == 'payment' %}
+                        <i class="fas fa-credit-card"></i>
+                        {% elif note.type == 'delivery' %}
+                        <i class="fas fa-home"></i>
+                        {% else %}
+                        <i class="fas fa-info-circle"></i>
+                        {% endif %}
+                    </div>
+                    <div class="notification-content">
+                        <div class="notification-header">
+                            <h4>{{ note.title }}</h4>
+                            <span class="notification-time">
+                                {{ note.created_at.strftime("%d %b %Y, %I:%M %p") }}
+                            </span>
+                        </div>
+                        <p class="notification-message">{{ note.message }}</p>
+                        {% if not note.read %}
+                        <span class="unread-badge">New</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+    </main>
+</div>
+
+<script>
+function markAllAsRead() {
+    fetch('/api/notifications/mark-read', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    }).then(response => {
+        if (response.ok) {
+            location.reload();
+        }
+    });
+}
+</script>
+{% endblock %}

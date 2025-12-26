@@ -1,0 +1,130 @@
+{% extends "layout.html" %}
+
+{% block title %}Track Parcel - Courier Management System{% endblock %}
+
+{% block content %}
+    <nav class="navbar">
+        <div class="container">
+            <a href="/" class="logo">CourioSys</a>
+            <ul class="nav-links">
+                <li><a href="/">Home</a></li>
+                <li><a href="/about">About Us</a></li>
+                <li><a href="/track">Track Parcel</a></li>
+                <li><a href="/signup" class="btn">Sign Up</a></li>
+                <li><a href="/login" class="btn">Login</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="form-container">
+            <h2 style="text-align: center; margin-bottom: 2rem;">Track Your Parcel</h2>
+            
+            <form action="/track" method="POST">
+                <div class="form-group">
+                    <label for="tracking_id">Enter Tracking ID:</label>
+                    <input type="text" id="tracking_id" name="tracking_id" class="form-control" 
+                           placeholder="e.g., TRK1234567890" required>
+                </div>
+                <button type="submit" class="btn" style="width: 100%;">Track Parcel</button>
+            </form>
+        </div>
+
+        {% if found and parcel %}
+        <div class="tracking-details" style="margin-top: 3rem;">
+            <h2 style="text-align: center; margin-bottom: 2rem;">Tracking Details</h2>
+            
+            <div class="table-container">
+                <table class="table">
+                    <tr>
+                        <th>Tracking ID</th>
+                        <td>{{ parcel.tracking_id }}</td>
+                    </tr>
+                    <tr>
+                        <th>Status</th>
+                        <td>
+                            <span class="status-badge status-{{ parcel.status }}">
+                                {{ parcel.status|upper }}
+                            </span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Sender</th>
+                        <td>{{ parcel.customer_name }}</td>
+                    </tr>
+                    <tr>
+                        <th>Receiver</th>
+                        <td>{{ parcel.receiver_name }}</td>
+                    </tr>
+                    <tr>
+                        <th>Delivery Address</th>
+                        <td>{{ parcel.receiver_address }}</td>
+                    </tr>
+                    <tr>
+                        <th>Expected Delivery</th>
+                        <td>
+                            {% if parcel.delivered_at %}
+                                {{ parcel.delivered_at.strftime('%Y-%m-%d') }}
+                            {% else %}
+                                In Progress
+                            {% endif %}
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- Tracking Timeline -->
+            <div class="timeline" style="margin-top: 3rem;">
+                <h3 style="text-align: center; margin-bottom: 2rem;">Delivery Timeline</h3>
+                
+                {% set statuses = ['booked', 'picked', 'in transit', 'out for delivery', 'delivered'] %}
+                {% for status in statuses %}
+                <div class="timeline-item {% if loop.index % 2 == 0 %}even{% else %}odd{% endif %}">
+                    <h4>{{ status|title }}</h4>
+                    {% if parcel.status.lower() == status or 
+                          (status == 'delivered' and parcel.status.lower() == 'delivered') %}
+                    <p style="color: green;">
+                        <i class="fas fa-check-circle"></i> Completed
+                    </p>
+                    {% elif loop.index0 < statuses.index(parcel.status.lower()) %}
+                    <p style="color: green;">
+                        <i class="fas fa-check-circle"></i> Completed
+                    </p>
+                    {% else %}
+                    <p style="color: gray;">
+                        <i class="fas fa-clock"></i> Pending
+                    </p>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% elif found == false %}
+        <div class="alert alert-danger" style="margin-top: 2rem; text-align: center;">
+            <p>Tracking ID not found. Please check and try again.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>FastShip</h3>
+                    <p>Your trusted partner in courier services.</p>
+                </div>
+                <div class="footer-section">
+                    <h3>Contact Info</h3>
+                    <ul>
+                        <li><i class="fas fa-phone"></i> +1 (555) 123-4567</li>
+                        <li><i class="fas fa-envelope"></i> info@fastship.com</li>
+                        <li><i class="fas fa-map-marker-alt"></i> 123 Main Street, City, Country</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 CourioSys. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+{% endblock %}

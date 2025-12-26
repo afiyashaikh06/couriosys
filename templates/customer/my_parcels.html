@@ -1,0 +1,151 @@
+{% extends "layout.html" %}
+
+{% block title %}My Parcels{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <h2>Customer Panel</h2>
+            <p>Welcome, {{ session.name }}</p>
+        </div>
+      <nav class="sidebar-nav">
+            <ul>
+                <li>
+                    <a href="{{ url_for('customer_dashboard') }}">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('book_parcel') }}">
+                        <i class="fas fa-box"></i>Book New Parcel
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('customer_parcels') }}">
+                        <i class="fas fa-list"></i> My Parcels
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('customer_track') }}">
+                        <i class="fas fa-map-marker-alt"></i> Track Parcel
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('customer_notifications') }}" class="active">
+                        <i class="fas fa-bell"></i> Notifications
+                        {% if notifications|selectattr('read', 'equalto', false)|list|length > 0 %}
+                        <span class="notification-badge">
+                            {{ notifications|selectattr('read', 'equalto', false)|list|length }}
+                        </span>
+                        {% endif %}
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('customer_profile') }}">
+                        <i class="fas fa-user"></i> My Profile
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('logout') }}">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </aside>
+
+    <main class="main-content">
+        <h1>My Parcels</h1>
+        
+        {% if parcels %}
+        <div class="table-container">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Tracking ID</th>
+                        <th>Receiver</th>
+                        <th>Receiver Phone</th>
+                        <th>Weight</th>
+                        <th>Cost</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for parcel in parcels %}
+                    <tr>
+                        <td>{{ parcel.tracking_id }}</td>
+                        <td>{{ parcel.receiver_name }}</td>
+                        <td>{{ parcel.receiver_phone }}</td>
+                        <td>{{ parcel.weight }} kg</td>
+                        <td>₹ {{ parcel.cost }}</td>
+                        <td>
+                            <span class="status-badge status-{{ parcel.status }}">
+                                {{ parcel.status|upper }}
+                            </span>
+                        </td>
+                        <td>{{ parcel.created_at.strftime('%Y-%m-%d') }}</td>
+                        <td>
+                             <!-- View button
+    <a href="{{ url_for('customer_parcel_detail', tracking_id=parcel.tracking_id) }}"
+       class="btn btn-sm"
+       style="padding: 0.3rem 0.8rem;">
+        View
+ 
+    Delete button: only show if booked AND within 2 days -->
+    <!-- {% if parcel.status == 'booked' and (now() - parcel.created_at).days <= 2 %}
+    <a href="/cancel_parcel/{{ parcel.tracking_id }}"
+       class="btn btn-sm"
+       style="padding: 0.3rem 0.8rem;"
+       onclick="return confirm('Cancel this parcel?');">
+        Delete 
+                            </a> -->
+                            
+    <!-- View: always -->
+    <a href="{{ url_for('customer_parcel_detail', tracking_id=parcel.tracking_id) }}"
+       class="btn btn-sm"
+       style="padding: 0.3rem 0.6rem;">
+        View
+    </a>
+
+    {# Edit + Delete only if booked AND within 2 days #}
+    {% set days_diff = (now() - parcel.created_at).days %}
+    {% if parcel.status|lower == 'booked' and days_diff <= 2 %}
+
+        <a href="{{ url_for('edit_parcel', tracking_id=parcel.tracking_id) }}"
+           class="btn btn-sm"
+           style="padding: 0.2rem 0.6rem;">
+            Edit
+        </a>
+
+        <a href="{{ url_for('cancel_parcel', tracking_id=parcel.tracking_id) }}"
+           class="btn btn-sm"
+           style="padding: 0.2rem 0.6rem;"
+           onclick="return confirm('Cancel this parcel?');">
+            Delete
+        </a>
+    {% endif %}
+</td>
+
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div style="text-align: center; padding: 3rem; background: white; border-radius: 10px;">
+            <i class="fas fa-box-open" style="font-size: 3rem; color: #ccc; margin-bottom: 1rem;"></i>
+            <h3>No Parcels Found</h3>
+            <p>You haven't booked any parcels yet.</p>
+            <a href="{{ url_for('book_parcel') }}" class="btn btn-success" style="margin-top: 1rem;">
+                <i class="fas fa-plus"></i> Book Your First Parcel
+            </a>
+        </div>
+        {% endif %}
+    </main>
+</div>
+{% endblock %}

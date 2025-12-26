@@ -1,0 +1,70 @@
+{% extends "layout.html" %}
+{% block title %}Edit Parcel{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <h2>Customer Panel</h2>
+            <p>Welcome, {{ session.name }}</p>
+        </div>
+        <nav class="sidebar-nav">
+            <ul>
+                <li><a href="{{ url_for('customer_dashboard') }}"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                <li><a href="{{ url_for('book_parcel') }}"><i class="fas fa-box"></i> Book New Parcel</a></li>
+                <li><a href="{{ url_for('customer_parcels') }}" class="active"><i class="fas fa-list"></i> My Parcels</a></li>
+                <li><a href="{{ url_for('customer_track') }}"><i class="fas fa-map-marker-alt"></i> Track Parcel</a></li>
+                <li><a href="{{ url_for('customer_notifications') }}"><i class="fas fa-bell"></i> Notifications</a></li>
+                <li><a href="{{ url_for('customer_profile') }}"><i class="fas fa-user"></i> My Profile</a></li>
+                <li><a href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+            </ul>
+        </nav>
+    </aside>
+
+    <main class="main-content">
+        <h1>Edit Parcel</h1>
+
+        <div class="form-container" style="max-width: 700px;">
+            <form method="POST">
+                <div class="form-group">
+                    <label>Tracking ID</label>
+                    <input type="text" class="form-control" value="{{ parcel.tracking_id }}" disabled>
+                </div>
+
+                <h3 style="margin-top: 1rem;">Sender Details</h3>
+                <div class="form-group">
+                    <label for="sender_address">Sender Address</label>
+                    <textarea id="sender_address" name="sender_address" class="form-control" rows="2" required>{{ parcel.sender_address }}</textarea>
+                </div>
+
+                <h3 style="margin-top: 1rem;">Receiver Details</h3>
+                <div class="form-group">
+                    <label for="receiver_name">Receiver Name</label>
+                    <input type="text" id="receiver_name" name="receiver_name" class="form-control"
+                           value="{{ parcel.receiver_name }}" required>
+                </div>
+                <div class="form-group">
+                    <label for="receiver_phone">Receiver Phone</label>
+                    <input type="tel" id="receiver_phone" name="receiver_phone" class="form-control"
+                           value="{{ parcel.receiver_phone }}" required>
+                </div>
+                <div class="form-group">
+                    <label for="receiver_address">Receiver Address</label>
+                    <textarea id="receiver_address" name="receiver_address" class="form-control" rows="2" required>{{ parcel.receiver_address }}</textarea>
+                </div>
+
+                <h3 style="margin-top: 1rem;">Parcel Info</h3>
+                <div class="form-group">
+                    <label for="weight">Weight (kg)</label>
+                    <input type="number" step="0.1" id="weight" name="weight" class="form-control"
+                           value="{{ parcel.weight }}" required>
+                </div>
+
+                <button type="submit" class="btn btn-success" style="width: 100%; margin-top: 1rem;">
+                    <i class="fas fa-save"></i> Save Changes
+                </button>
+            </form>
+        </div>
+    </main>
+</div>
+{% endblock %}

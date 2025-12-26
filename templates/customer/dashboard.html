@@ -1,0 +1,160 @@
+{% extends "layout.html" %}
+
+{% block title %}Customer Dashboard{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <h2>Customer Panel</h2>
+            <p>Welcome, {{ session.name }}</p>
+        </div>
+        <nav class="sidebar-nav">
+            <ul>
+                <li>
+                    <a href="{{ url_for('customer_dashboard') }}">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('book_parcel') }}">
+                        <i class="fas fa-box"></i>Book New Parcel
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('customer_parcels') }}">
+                        <i class="fas fa-list"></i> My Parcels
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('customer_track') }}">
+                        <i class="fas fa-map-marker-alt"></i> Track Parcel
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('customer_notifications') }}" class="active">
+                        <i class="fas fa-bell"></i> Notifications
+                        {% if notifications|selectattr('read', 'equalto', false)|list|length > 0 %}
+                        <span class="notification-badge">
+                            {{ notifications|selectattr('read', 'equalto', false)|list|length }}
+                        </span>
+                        {% endif %}
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('customer_profile') }}">
+                        <i class="fas fa-user"></i> My Profile
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('logout') }}">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </aside>
+                   
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <h1>Dashboard</h1>
+        
+        <!-- Stats Cards -->
+        <div class="stats-cards">
+            <div class="stat-card">
+                <h3>Total Parcels</h3>
+                <div class="number">{{ parcels|length }}</div>
+            </div>
+            <div class="stat-card">
+                <h3>Pending Delivery</h3>
+                <div class="number">
+                    {{ parcels|selectattr('status', 'equalto', 'booked')|list|length + 
+                       parcels|selectattr('status', 'equalto', 'picked')|list|length + 
+                       parcels|selectattr('status', 'equalto', 'in transit')|list|length + 
+                       parcels|selectattr('status', 'equalto', 'out for delivery')|list|length }}
+                </div>
+            </div>
+            <div class="stat-card">
+                <h3>Delivered</h3>
+                <div class="number">
+                    {{ parcels|selectattr('status', 'equalto', 'delivered')|list|length }}
+                </div>
+            </div>
+            <div class="stat-card">
+                <h3>Cancelled</h3>
+                <div class="number">
+                    {{ parcels|selectattr('status', 'equalto', 'cancelled')|list|length }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Parcels -->
+        <div style="margin-top: 2rem;">
+            <h2>Recent Parcels</h2>
+            {% if parcels %}
+            <div class="table-container">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Tracking ID</th>
+                            <th>Receiver</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for parcel in parcels[:5] %}
+                        <tr>
+                            <td>{{ parcel.tracking_id }}</td>
+                            <td>{{ parcel.receiver_name }}</td>
+                            <td>
+                                <span class="status-badge status-{{ parcel.status }}">
+                                    {{ parcel.status|upper }}
+                                </span>
+                            </td>
+                            <td>{{ parcel.created_at.strftime('%Y-%m-%d') }}</td>
+                            <td>
+                                <a href="/track?tracking_id={{ parcel.tracking_id }}" 
+                                   class="btn" style="padding: 0.3rem 0.8rem;">Track</a>
+                                {% if parcel.status == 'booked' %}
+                                <a href="/cancel_parcel/{{ parcel.tracking_id }}" 
+                                   class="btn" style="padding: 0.3rem 0.8rem;"
+                                   onclick="return confirm('Are you sure you want to cancel this parcel?')">
+                                    Cancel
+                                </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div style="text-align: center; padding: 2rem; background: white; border-radius: 10px;">
+                <p>No parcels found. <a href="{{ url_for('book_parcel') }}">Book your first parcel!</a></p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Quick Actions -->
+        <div style="margin-top: 2rem;">
+            <h2>Quick Actions</h2>
+            <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+                <a href="{{ url_for('book_parcel') }}" class="btn btn-success">
+                    <i class="fas fa-plus"></i> Book New Parcel
+                </a>
+                <a href="{{ url_for('customer_track') }}" class="btn">
+                    <i class="fas fa-search"></i> Track Parcel
+                </a>
+                <a href="{{ url_for('customer_notifications') }}" class="btn">
+                    <i class="fas fa-bell"></i> View Notifications
+                </a>
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}

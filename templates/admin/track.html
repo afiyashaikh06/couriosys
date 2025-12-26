@@ -1,0 +1,124 @@
+{% extends "layout.html" %}
+{% block title %}Track Parcel{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <h2>Admin Panel</h2>
+            <p>Welcome, {{ session.name }}</p>
+        </div>
+        <nav class="sidebar-nav">
+            <ul>
+                <li><a href="{{ url_for('admin_dashboard') }}" class="active">
+                    <i class="fas fa-tachometer-alt"></i> Dashboard
+                </a></li>
+                <li><a href="{{ url_for('admin_staff') }}">
+                    <i class="fas fa-users-cog"></i> Staff Management
+                </a></li>
+                <li><a href="{{ url_for('admin_customers') }}">
+                    <i class="fas fa-user-friends"></i> Customers
+                </a></li>
+                <li><a href="{{ url_for('admin_parcels') }}">
+                    <i class="fas fa-boxes"></i> Parcels
+                </a></li>
+                <li><a href="{{ url_for('admin_track') }}">
+                    <i class="fas fa-map-marker-alt"></i> Track Parcel
+                </a></li>
+                <li><a href="{{ url_for('admin_reports') }}">
+                    <i class="fas fa-chart-bar"></i> Reports
+                </a></li>
+                <li><a href="{{ url_for('logout') }}">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a></li>
+            </ul>
+        </nav>
+    </aside>
+    <main class="main-content">
+        <h1>Track Parcel</h1>
+
+        <!-- Search Form -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <form method="POST">
+                    <div class="input-group">
+                        <input type="text" name="tracking_id" class="form-control" 
+                               placeholder="Enter tracking ID (e.g. TRK123456789)" required>
+                        <button type="submit" class="btn">
+                            <i class="fas fa-search"></i> Track
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        {% if parcel %}
+        <!-- Parcel Details -->
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Sender Details</h5>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Name:</strong> {{ parcel.sender_name }}</p>
+                        <p><strong>Phone:</strong> {{ parcel.sender_phone }}</p>
+                        <p><strong>Address:</strong> {{ parcel.sender_address }}, {{ parcel.sender_pincode }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Receiver Details</h5>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Name:</strong> {{ parcel.receiver_name }}</p>
+                        <p><strong>Phone:</strong> {{ parcel.receiver_phone }}</p>
+                        <p><strong>Address:</strong> {{ parcel.receiver_address }}, {{ parcel.receiver_pincode }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status Timeline -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5>Status Timeline</h5>
+            </div>
+            <div class="card-body">
+                <div class="timeline">
+                    {% for status in parcel.status_history %}
+                    <div class="timeline-item">
+                        <div class="timeline-badge status-{{ status.status }}"></div>
+                        <div class="timeline-content">
+                            <h6>{{ status.status|replace(' ', '-')|title }}</h6>
+                            <p>{{ status.note }}</p>
+                            <small>{{ status.timestamp.strftime('%Y-%m-%d %H:%M') }}</small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-search fa-3x text-muted mb-3"></i>
+            <h5>Enter tracking ID above</h5>
+        </div>
+        {% endif %}
+    </main>
+</div>
+
+<style>
+.timeline { position: relative; padding-left: 30px; }
+.timeline-item { position: relative; margin-bottom: 20px; }
+.timeline-badge { 
+    position: absolute; left: -25px; top: 5px; width: 20px; height: 20px; 
+    border-radius: 50%; background: #007bff; 
+}
+.timeline-content h6 { margin-bottom: 5px; }
+</style>
+{% endblock %}

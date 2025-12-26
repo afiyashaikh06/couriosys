@@ -1,0 +1,66 @@
+{% extends "layout.html" %}
+{% block title %}Add Customer{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <h2>Admin Panel</h2>
+            <p>Welcome, {{ session.name }}</p>
+        </div>
+        <nav class="sidebar-nav">
+            <ul>
+                <li><a href="{{ url_for('admin_dashboard') }}" class="active">
+                    <i class="fas fa-tachometer-alt"></i> Dashboard
+                </a></li>
+                <li><a href="{{ url_for('admin_staff') }}">
+                    <i class="fas fa-users-cog"></i> Staff Management
+                </a></li>
+                <li><a href="{{ url_for('admin_customers') }}">
+                    <i class="fas fa-user-friends"></i> Customers
+                </a></li>
+                <li><a href="{{ url_for('admin_parcels') }}">
+                    <i class="fas fa-boxes"></i> Parcels
+                </a></li>
+                <li><a href="{{ url_for('admin_track') }}">
+                    <i class="fas fa-map-marker-alt"></i> Track Parcel
+                </a></li>
+                <li><a href="{{ url_for('admin_reports') }}">
+                    <i class="fas fa-chart-bar"></i> Reports
+                </a></li>
+                <li><a href="{{ url_for('logout') }}">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a></li>
+            </ul>
+        </nav>
+    </aside>
+
+    <main class="main-content">
+        <h1>Add Customer</h1>
+        <div class="form-container" style="max-width: 600px;">
+            <form method="POST">
+                <div class="form-group">
+                    <label>Full Name</label>
+                    <input type="text" name="name" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" name="email" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label>Phone</label>
+                    <input type="tel" name="phone" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" name="password" class="form-control" minlength="6" required>
+                </div>
+                <button type="submit" class="btn btn-success">
+                    <i class="fas fa-save"></i> Save Customer
+                </button>
+            </form>
+        </div>
+    </main>
+</div>
+{% endblock %}

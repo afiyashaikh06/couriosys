@@ -1,0 +1,105 @@
+{% extends "layout.html" %}
+
+{% block title %}Home - Courier Management System{% endblock %}
+
+{% block content %}
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="container">
+            <a href="/" class="logo">CourioSys</a>
+            <ul class="nav-links">
+                <li><a href="/">Home</a></li>
+                <li><a href="/about">About Us</a></li>
+                <li><a href="/track">Track Parcel</a></li>
+                <li><a href="/signup" class="btn">Sign Up</a></li>
+                <li><a href="/login" class="btn">Login</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <h1>Fast & Reliable Courier Services</h1>
+            <p>Delivering your parcels with speed, safety, and satisfaction. Track your shipments in real-time and experience seamless delivery services.</p>
+            <a href="/signup" class="btn">Book Now</a>
+        </div>
+    </section>
+
+    <!-- Track Parcel Section -->
+    <section class="track-section">
+        <div class="container">
+            <h2>Track Your Parcel</h2>
+            <form action="/track" method="POST" class="track-form">
+                <input type="text" name="tracking_id" class="track-input" placeholder="Enter Tracking ID" required>
+                <button type="submit" class="btn">Track Parcel</button>
+            </form>
+        </div>
+    </section>
+
+    <!-- About Us Section -->
+    <section class="about-section">
+        <div class="container">
+            <div class="about-content">
+                <h2>About Our Courier Service</h2>
+                <p>We are a leading courier service provider dedicated to delivering your parcels with utmost care and efficiency. With years of experience in logistics, we ensure timely delivery across the nation.</p>
+                
+                <div class="features">
+                    <div class="feature-card">
+                        <i class="fas fa-shipping-fast"></i>
+                        <h3>Fast Delivery</h3>
+                        <p>Express delivery options available for urgent shipments</p>
+                    </div>
+                    <div class="feature-card">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <h3>Real-time Tracking</h3>
+                        <p>Track your parcel at every stage of delivery</p>
+                    </div>
+                    <div class="feature-card">
+                        <i class="fas fa-shield-alt"></i>
+                        <h3>Secure Handling</h3>
+                        <p>Your parcels are handled with care and security</p>
+                    </div>
+                    <div class="feature-card">
+                        <i class="fas fa-headset"></i>
+                        <h3>24/7 Support</h3>
+                        <p>Customer support available round the clock</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>FastShip</h3>
+                    <p>Your trusted partner in courier services. Delivering happiness, one parcel at a time.</p>
+                </div>
+                <div class="footer-section">
+                    <h3>Quick Links</h3>
+                    <ul>
+                        <li><a href="/">Home</a></li>
+                        <li><a href="/about">About Us</a></li>
+                        <li><a href="/track">Track Parcel</a></li>
+                        <li><a href="/login">Login</a></li>
+                        <li><a href="/signup">Sign Up</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>Contact Info</h3>
+                    <ul>
+                        <li><i class="fas fa-phone"></i> +1 (555) 123-4567</li>
+                        <li><i class="fas fa-envelope"></i> info@fastship.com</li>
+                        <li><i class="fas fa-map-marker-alt"></i> 123 Main Street, City, Country</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 CourioSys. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+{% endblock %}

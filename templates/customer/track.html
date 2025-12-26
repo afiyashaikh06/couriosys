@@ -1,0 +1,118 @@
+{% extends "layout.html" %}
+
+{% block title %}Track Parcel{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <h2>Customer Panel</h2>
+            <p>Welcome, {{ session.name }}</p>
+        </div>
+        <nav class="sidebar-nav">
+            <ul>
+                <li>
+                    <a href="{{ url_for('customer_dashboard') }}">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('book_parcel') }}">
+                        <i class="fas fa-box"></i>Book New Parcel
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('customer_parcels') }}">
+                        <i class="fas fa-list"></i> My Parcels
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('customer_track') }}">
+                        <i class="fas fa-map-marker-alt"></i> Track Parcel
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('customer_notifications') }}" class="active">
+                        <i class="fas fa-bell"></i> Notifications
+                        {% if notifications|selectattr('read', 'equalto', false)|list|length > 0 %}
+                        <span class="notification-badge">
+                            {{ notifications|selectattr('read', 'equalto', false)|list|length }}
+                        </span>
+                        {% endif %}
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('customer_profile') }}">
+                        <i class="fas fa-user"></i> My Profile
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('logout') }}">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </aside>
+
+    <main class="main-content">
+        <h1>Track Your Parcels</h1>
+        
+        <div class="form-container" style="max-width: 600px; margin-bottom: 2rem;">
+            <h3 style="text-align: center; margin-bottom: 1rem;">Enter Tracking ID</h3>
+            <form action="/track" method="POST">
+                <div class="form-group">
+                    <input type="text" name="tracking_id" class="form-control" 
+                           placeholder="Enter Tracking ID" required>
+                </div>
+                <button type="submit" class="btn" style="width: 100%;">Track Parcel</button>
+            </form>
+        </div>
+
+        <h2>Your Parcels</h2>
+        {% if parcels %}
+        <div class="table-container">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Tracking ID</th>
+                        <th>Receiver</th>
+                        <th>Current Status</th>
+                        <th>Last Updated</th>
+                        <th>Track</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for parcel in parcels %}
+                    <tr>
+                        <td>{{ parcel.tracking_id }}</td>
+                        <td>{{ parcel.receiver_name }}</td>
+                        <td>
+                            <span class="status-badge status-{{ parcel.status }}">
+                                {{ parcel.status|upper }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if parcel.updated_at %}
+                            {{ parcel.updated_at.strftime('%Y-%m-%d %H:%M') }}
+                            {% else %}
+                            {{ parcel.created_at.strftime('%Y-%m-%d %H:%M') }}
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="/track?tracking_id={{ parcel.tracking_id }}" 
+                               class="btn" style="padding: 0.3rem 0.8rem;">View Details</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div style="text-align: center; padding: 2rem; background: white; border-radius: 10px;">
+            <p>No parcels found. <a href="{{ url_for('book_parcel') }}">Book your first parcel!</a></p>
+        </div>
+        {% endif %}
+    </main>
+</div>
+{% endblock %}

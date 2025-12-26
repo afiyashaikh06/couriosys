@@ -1,0 +1,75 @@
+{% extends "layout.html" %}
+{% block title %}Customers{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <h2>Admin Panel</h2>
+            <p>Welcome, {{ session.name }}</p>
+        </div>
+        <nav class="sidebar-nav">
+            <ul>
+                <li><a href="{{ url_for('admin_dashboard') }}"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                <li><a href="{{ url_for('admin_staff') }}"><i class="fas fa-users-cog"></i> Staff Management</a></li>
+                <li><a href="{{ url_for('admin_customers') }}" class="active"><i class="fas fa-user-friends"></i> Customers</a></li>
+                <li><a href="{{ url_for('admin_parcels') }}"><i class="fas fa-boxes"></i> Parcels</a></li>
+                <li><a href="{{ url_for('admin_track') }}"><i class="fas fa-map-marker-alt"></i> Track Parcel</a></li>
+                <li><a href="{{ url_for('admin_reports') }}"><i class="fas fa-chart-bar"></i> Reports</a></li>
+                <li><a href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+            </ul>
+        </nav>
+    </aside>
+
+    <main class="main-content">
+        <div class="card">
+            <div class="card-header">
+                <h3><i class="fas fa-user-friends"></i> All Customers ({{ customers|length }})</h3>
+            </div>
+             <div class="mb-3">
+        <a href="{{ url_for('add_customer') }}" class="btn btn-success">
+            <i class="fas fa-user-plus"></i> Add Customer
+        </a>
+    </div>
+</div>
+
+            <div class="card-body">
+                {% if customers %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Created</th><th>Actions</th></tr></thead>
+                        <tbody>
+                            {% for customer in customers %}
+                            <tr>
+                                <td>{{ customer.name }}</td>
+                                <td>{{ customer.email }}</td>
+                                <td>{{ customer.phone }}</td>
+                                <td>{{ customer.created_at.strftime('%Y-%m-%d') }}</td>
+                                <td>
+    <a href="{{ url_for('view_customer', customer_id=customer['_id']|string) }}"
+       class="btn btn-sm ">
+        <i class="fas fa-eye"></i> View
+    </a>
+    <a href="{{ url_for('delete_customer', customer_id=customer['_id']|string) }}"
+       class="btn btn-sm"
+       onclick="return confirm('Delete this customer?')">
+        <i class="fas fa-trash"></i>
+    </a>
+</td>
+
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                    <h5>No customers yet</h5>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}

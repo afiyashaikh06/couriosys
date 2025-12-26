@@ -1,0 +1,462 @@
+/* ========== GLOBAL ==========\*/
+:root {
+    --primary-color: #2c3e50;
+    --secondary-color: #3498db;
+    --success-color: #27ae60;
+    --danger-color: #e74c3c;
+    --warning-color: #f39c12;
+    --light-bg: #f8f9fa;
+    --white: #ffffff;
+    --gray: #6c757d;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+    color: #333;
+    background-color: var(--light-bg);
+}
+
+/* Utilities */
+.text-center { text-align: center; }
+.mt-1 { margin-top: 1rem; }
+.mt-2 { margin-top: 2rem; }
+.mb-1 { margin-bottom: 1rem; }
+.mb-2 { margin-bottom: 2rem; }
+
+/* ========== LAYOUT: DASHBOARD (CUSTOMER + ADMIN) ==========\*/
+.dashboard {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* Sidebar */
+.sidebar {
+    width: 260px;
+    background: linear-gradient(180deg, var(--primary-color) 0%, #1a252f 100%);
+    color: var(--white);
+    padding: 2rem 0;
+    box-shadow: 4px 0 16px rgba(0,0,0,0.15);
+}
+
+.sidebar-header {
+    text-align: center;
+    padding: 0 1.5rem 1.5rem;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    margin-bottom: 1.5rem;
+}
+
+.sidebar-header h2 {
+    font-size: 1.3rem;
+    margin-bottom: 0.3rem;
+    font-weight: 700;
+}
+
+.sidebar-header p {
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+.sidebar-nav ul {
+    list-style: none;
+    padding: 0 1.25rem;
+}
+
+.sidebar-nav li {
+    margin-bottom: 0.4rem;
+}
+
+.sidebar-nav a {
+    display: flex;
+    align-items: center;
+    padding: 0.85rem 1rem;
+    color: #b8c2cc;
+    text-decoration: none;
+    border-radius: 8px;
+    transition: all 0.25s ease;
+    font-size: 0.95rem;
+    font-weight: 500;
+}
+
+.sidebar-nav a i {
+    width: 20px;
+    margin-right: 10px;
+    font-size: 1rem;
+}
+
+.sidebar-nav a:hover,
+.sidebar-nav a.active {
+    background: rgba(52,152,219,0.18);
+    color: var(--white);
+    border-left: 4px solid var(--secondary-color);
+    transform: translateX(4px);
+}
+
+/* Main */
+.main-content {
+    flex: 1;
+    padding: 2.5rem 2rem;
+    background-color: var(--light-bg);
+}
+
+.main-content h1 {
+    font-size: 1.9rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    margin-bottom: 1.5rem;
+}
+
+/* ========== STATS CARDS (Dashboard top) ==========\*/
+.stats-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2.5rem;
+}
+
+.stat-card {
+    background: var(--white);
+    padding: 1.8rem 1.5rem;
+    border-radius: 14px;
+    border: 1px solid #e9ecef;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+    text-align: center;
+    transition: all 0.25s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.stat-card::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--secondary-color), var(--success-color));
+}
+
+.stat-card h3 {
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--gray);
+    margin-bottom: 0.8rem;
+    font-weight: 600;
+}
+
+.stat-card .number {
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: var(--secondary-color);
+}
+
+.stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 26px rgba(0,0,0,0.15);
+}
+
+/* ========== TABLES ==========\*/
+.table-container {
+    background: var(--white);
+    border-radius: 14px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+    overflow: hidden;
+    margin-top: 1rem;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 0;
+}
+
+.table th,
+.table td {
+    padding: 1rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid #edf0f2;
+    vertical-align: middle;
+}
+
+.table th {
+    background: linear-gradient(135deg, var(--primary-color), #34495e);
+    color: var(--white);
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    font-weight: 600;
+}
+
+.table tr:hover td {
+    background-color: #f8fafc;
+}
+
+/* ========== STATUS BADGES ==========\*/
+.status-badge {
+    display: inline-block;
+    padding: 0.35rem 0.9rem;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.status-booked {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.status-picked {
+    background-color: #cce5ff;
+    color: #004085;
+}
+
+.status-in\ transit,
+.status-in_transit {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.status-out\ for\ delivery,
+.status-out_for_delivery {
+    background-color: #d6d8f5;
+    color: #2c3e50;
+}
+
+.status-delivered {
+    background-color: #d1ecf1;
+    color: #0c5460;
+}
+
+.status-cancelled {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+/* ========== BUTTONS ==========\*/
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.6rem 1.3rem;
+    border-radius: 999px;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    background-color: var(--secondary-color);
+    color: var(--white);
+}
+
+.btn:hover {
+    filter: brightness(1.05);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.btn-success {
+    background-color: var(--success-color);
+}
+
+.btn-danger {
+    background-color: var(--danger-color);
+}
+
+/* ========== FORM CONTAINER (Book, Profile, Track input) ==========\*/
+.form-container {
+    background: var(--white);
+    border-radius: 14px;
+    padding: 1.8rem;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+}
+
+.form-group {
+    margin-bottom: 1.25rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.4rem;
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.form-control {
+    width: 100%;
+    padding: 0.75rem 0.9rem;
+    border: 1px solid #dfe3e6;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    transition: all 0.2s;
+}
+
+.form-control:focus {
+    border-color: var(--secondary-color);
+    outline: none;
+    box-shadow: 0 0 0 0.12rem rgba(52,152,219,0.25);
+}
+
+/* ========== NOTIFICATIONS PAGE ==========\*/
+.notifications-container {
+    margin-top: 1.5rem;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    background: var(--white);
+    border-radius: 14px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+}
+
+.empty-state i {
+    font-size: 3rem;
+    color: #ced4da;
+    margin-bottom: 1rem;
+}
+
+.notifications-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.notification-card {
+    display: flex;
+    gap: 1rem;
+    background: var(--white);
+    padding: 1.1rem 1.25rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+    border-left: 4px solid transparent;
+}
+
+.notification-card.unread {
+    border-left-color: var(--secondary-color);
+    background: #eef6ff;
+}
+
+.notification-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #ecf0f1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary-color);
+    flex-shrink: 0;
+}
+
+.notification-content {
+    flex: 1;
+}
+
+.notification-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.25rem;
+}
+
+.notification-header h4 {
+    margin: 0;
+    font-size: 1rem;
+}
+
+.notification-time {
+    font-size: 0.8rem;
+    color: var(--gray);
+}
+
+.notification-message {
+    margin: 0.25rem 0;
+    font-size: 0.9rem;
+}
+
+.unread-badge {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    background: var(--secondary-color);
+    color: white;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+
+/* badge on sidebar link */
+.notification-badge {
+    margin-left: 6px;
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+    background: var(--danger-color);
+    color: white;
+    font-size: 0.7rem;
+}
+
+/* ========== PROFILE EXTRA BOX ==========\*/
+.main-content .form-container + div {
+    box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+}
+
+/* ========== TIMELINE (if used on track page later) ==========\*/
+.timeline {
+    position: relative;
+    padding: 2rem 0;
+}
+
+/* ========== RESPONSIVE ==========\*/
+@media (max-width: 992px) {
+    .main-content {
+        padding: 2rem 1.25rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .dashboard {
+        flex-direction: column;
+    }
+
+    .sidebar {
+        width: 100%;
+        padding: 1.5rem 0;
+    }
+
+    .main-content {
+        padding: 1.5rem 1rem;
+    }
+
+    .stats-cards {
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    }
+
+    .table th,
+    .table td {
+        padding: 0.85rem 0.7rem;
+        font-size: 0.85rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .stats-cards {
+        grid-template-columns: 1fr;
+    }
+
+    .sidebar-nav a {
+        padding: 0.8rem 0.9rem;
+        font-size: 0.9rem;
+    }
+
+    .main-content h1 {
+        font-size: 1.5rem;
+    }
+}

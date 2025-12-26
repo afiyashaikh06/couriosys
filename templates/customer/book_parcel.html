@@ -1,0 +1,253 @@
+{% extends "layout.html" %}
+
+{% block title %}Book Parcel{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <h2>Customer Panel</h2>
+            <p>Welcome, {{ session.name }}</p>
+        </div>
+        <nav class="sidebar-nav">
+            <ul>
+                <li>
+                    <a href="{{ url_for('customer_dashboard') }}">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('book_parcel') }}">
+                        <i class="fas fa-box"></i>Book New Parcel
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('customer_parcels') }}">
+                        <i class="fas fa-list"></i> My Parcels
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('customer_track') }}">
+                        <i class="fas fa-map-marker-alt"></i> Track Parcel
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('customer_notifications') }}" class="active">
+                        <i class="fas fa-bell"></i> Notifications
+                        {% if notifications|selectattr('read', 'equalto', false)|list|length > 0 %}
+                        <span class="notification-badge">
+                            {{ notifications|selectattr('read', 'equalto', false)|list|length }}
+                        </span>
+                        {% endif %}
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('customer_profile') }}">
+                        <i class="fas fa-user"></i> My Profile
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('logout') }}">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </aside>
+
+    <main class="main-content">
+        <h1>Book New Parcel</h1>
+        
+        <div class="form-container" style="max-width: 800px;">
+            <form action="{{ url_for('book_parcel') }}" method="POST">
+                
+                <!-- Sender Details Section -->
+                <h3 style="margin-bottom: 1rem; color: var(--primary-color); border-bottom: 2px solid #3498db; padding-bottom: 0.5rem;">
+                    <i class="fas fa-user"></i> Sender Details
+                </h3>
+                
+                <div class="form-group">
+                    <label for="sender_name">Sender Name *</label>
+                    <input type="text" id="sender_name" name="sender_name" class="form-control" 
+                           value="{{ customer.name }}" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="sender_phone">Sender Phone *</label>
+                    <input type="tel" id="sender_phone" name="sender_phone" class="form-control" 
+                           value="{{ customer.phone }}" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="sender_address">Pickup Address *</label>
+                    <textarea id="sender_address" name="sender_address" class="form-control" 
+                              rows="3" required placeholder="Enter full pickup address">{{ customer.address or '' }}</textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="sender_pincode">Pickup Pincode *</label>
+                    <input type="text" id="sender_pincode" name="sender_pincode" class="form-control" 
+                           required placeholder="e.g., 560001">
+                </div>
+
+                <!-- Receiver Details Section -->
+                <h3 style="margin: 2rem 0 1rem 0; color: var(--primary-color); border-bottom: 2px solid #3498db; padding-bottom: 0.5rem;">
+                    <i class="fas fa-user-friends"></i> Receiver Details
+                </h3>
+                
+                <div class="form-group">
+                    <label for="receiver_name">Receiver Name *</label>
+                    <input type="text" id="receiver_name" name="receiver_name" class="form-control" 
+                           required placeholder="Enter receiver's full name">
+                </div>
+
+                <div class="form-group">
+                    <label for="receiver_phone">Receiver Phone *</label>
+                    <input type="tel" id="receiver_phone" name="receiver_phone" class="form-control" 
+                           required placeholder="Enter receiver's phone number">
+                </div>
+
+                <div class="form-group">
+                    <label for="receiver_address">Delivery Address *</label>
+                    <textarea id="receiver_address" name="receiver_address" class="form-control" 
+                              rows="3" required placeholder="Enter full delivery address"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="receiver_pincode">Delivery Pincode *</label>
+                    <input type="text" id="receiver_pincode" name="receiver_pincode" class="form-control" 
+                           required placeholder="e.g., 110001">
+                </div>
+
+                <!-- Parcel Details Section -->
+                <h3 style="margin: 2rem 0 1rem 0; color: var(--primary-color); border-bottom: 2px solid #3498db; padding-bottom: 0.5rem;">
+                    <i class="fas fa-box"></i> Parcel Details
+                </h3>
+                
+                <div class="form-group">
+                    <label for="weight">Weight (kg) *</label>
+                    <input type="number" id="weight" name="weight" class="form-control" 
+                           step="0.1" min="0.1" required placeholder="e.g., 2.5">
+                </div>
+
+                <div class="form-group">
+                    <label for="parcel_type">Parcel Type *</label>
+                    <select id="parcel_type" name="parcel_type" class="form-control" required>
+                        <option value="">Select Type</option>
+                        <option value="document">Document</option>
+                        <option value="box">Box/Package</option>
+                        <option value="fragile">Fragile Items</option>
+                        <option value="electronics">Electronics</option>
+                        <option value="clothing">Clothing</option>
+                        <option value="food">Food Items</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="description">Description (Optional)</label>
+                    <textarea id="description" name="description" class="form-control" 
+                              rows="2" placeholder="Describe the contents of your parcel"></textarea>
+                </div>
+
+                <!-- Delivery Options -->
+                <div class="form-group">
+                    <label for="delivery_type">Delivery Type *</label>
+                    <select id="delivery_type" name="delivery_type" class="form-control" required>
+                        <option value="standard">Standard (3-5 days)</option>
+                        <option value="express">Express (1-2 days)</option>
+                        <option value="same-day">Same Day (Extra charges apply)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="pickup_date">Pickup Date *</label>
+                    <input type="date" id="pickup_date" name="pickup_date" class="form-control" 
+                           min="{{ now().strftime('%Y-%m-%d') if now else '' }}" required>
+                </div>
+
+                <!-- Cost Calculation -->
+                <div id="cost-preview" style="background: #e8f4fc; padding: 1rem; border-radius: 5px; margin-bottom: 1rem; border-left: 4px solid #3498db;">
+                    <p style="margin: 0; font-size: 1.1rem;">
+                        <strong>Estimated Cost:</strong> 
+                        <span id="estimated-cost" style="color: #27ae60; font-weight: bold; font-size: 1.2rem;">₹ 0.00</span>
+                    </p>
+                    <small style="color: #666;">Cost calculated based on weight and parcel type</small>
+                </div>
+
+                <!-- Payment Section -->
+                <h3 style="margin: 2rem 0 1rem 0; color: var(--primary-color); border-bottom: 2px solid #3498db; padding-bottom: 0.5rem;">
+                    <i class="fas fa-credit-card"></i> Payment
+                </h3>
+                
+                <div style="background: #f8f9fa; padding: 1rem; border-radius: 5px; margin-bottom: 2rem;">
+                    <p><strong>Mode:</strong> Cash on Delivery (COD)</p>
+                    <p><strong>Payment Status:</strong> Will be marked as "Pending" until delivery</p>
+                </div>
+
+                <button type="submit" class="btn btn-success" style="width: 100%; padding: 1rem; font-size: 1.1rem;">
+                    <i class="fas fa-check-circle"></i> Book Parcel Now
+                </button>
+            </form>
+        </div>
+    </main>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const weightInput = document.getElementById('weight');
+    const parcelTypeSelect = document.getElementById('parcel_type');
+    const deliveryTypeSelect = document.getElementById('delivery_type');
+    const costSpan = document.getElementById('estimated-cost');
+    
+    function calculateCost() {
+        const weight = parseFloat(weightInput.value) || 0;
+        const parcelType = parcelTypeSelect.value;
+        const deliveryType = deliveryTypeSelect.value;
+        
+        if (weight > 0 && parcelType && deliveryType) {
+            // Base cost
+            let cost = 50;
+            cost += weight * 10;
+            
+            // Parcel type multiplier
+            const typeMultiplier = {
+                'document': 1.0,
+                'box': 1.2,
+                'fragile': 1.5,
+                'electronics': 1.3,
+                'clothing': 1.1,
+                'food': 1.4,
+                'other': 1.2
+            };
+            
+            // Delivery type multiplier
+            const deliveryMultiplier = {
+                'standard': 1.0,
+                'express': 1.5,
+                'same-day': 2.0
+            };
+            
+            cost *= typeMultiplier[parcelType] || 1.0;
+            cost *= deliveryMultiplier[deliveryType] || 1.0;
+            
+            costSpan.textContent = '₹ ' + cost.toFixed(2);
+        } else {
+            costSpan.textContent = '₹ 0.00';
+        }
+    }
+    
+    // Attach event listeners
+    weightInput.addEventListener('input', calculateCost);
+    parcelTypeSelect.addEventListener('change', calculateCost);
+    deliveryTypeSelect.addEventListener('change', calculateCost);
+    
+    // Set minimum date to today
+    const today = new Date().toISOString().split('T')[0];
+    const pickupDateInput = document.getElementById('pickup_date');
+    if (pickupDateInput) {
+        pickupDateInput.min = today;
+    }
+});
+</script>
+{% endblock %}

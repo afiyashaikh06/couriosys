@@ -1,0 +1,55 @@
+<aside class="sidebar">
+    <div class="sidebar-header">
+        <h2>{{ panel_title }}</h2>
+        <p>Welcome, {{ session.name }}</p>
+    </div>
+    <nav class="sidebar-nav">
+        <ul>
+            {% if user_role == 'admin' %}
+            <li><a href="{{ url_for('admin_dashboard') }}" class="{{ 'active' if active_page=='dashboard' else '' }}">
+                <i class="fas fa-tachometer-alt"></i> Dashboard
+            </a></li>
+            <li><a href="{{ url_for('admin_staff') }}" class="{{ 'active' if active_page=='staff' else '' }}">
+                <i class="fas fa-users-cog"></i> Staff Management
+            </a></li>
+            <li><a href="{{ url_for('admin_customers') }}" class="{{ 'active' if active_page=='customers' else '' }}">
+                <i class="fas fa-user-friends"></i> Customers
+            </a></li>
+            <li><a href="{{ url_for('admin_parcels') }}" class="{{ 'active' if active_page=='parcels' else '' }}">
+                <i class="fas fa-boxes"></i> Parcels
+            </a></li>
+            <li><a href="{{ url_for('admin_track') }}" class="{{ 'active' if active_page=='track' else '' }}">
+                <i class="fas fa-map-marker-alt"></i> Track Parcel
+            </a></li>
+            <li><a href="{{ url_for('admin_reports') }}" class="{{ 'active' if active_page=='reports' else '' }}">
+                <i class="fas fa-chart-bar"></i> Reports
+            </a></li>
+
+            {% elif user_role == 'customer' %}
+            <li><a href="{{ url_for('customer_dashboard') }}" class="{{ 'active' if active_page=='dashboard' else '' }}">
+                <i class="fas fa-tachometer-alt"></i> Dashboard
+            </a></li>
+            <li><a href="{{ url_for('book_parcel') }}" class="{{ 'active' if active_page=='book' else '' }}">
+                <i class="fas fa-box"></i> Book New Parcel
+            </a></li>
+            <li><a href="{{ url_for('customer_parcels') }}" class="{{ 'active' if active_page=='my_parcels' else '' }}">
+                <i class="fas fa-list"></i> My Parcels
+            </a></li>
+            <li><a href="{{ url_for('customer_track') }}" class="{{ 'active' if active_page=='track' else '' }}">
+                <i class="fas fa-map-marker-alt"></i> Track Parcel
+            </a></li>
+            <li><a href="{{ url_for('customer_notifications') }}" class="{{ 'active' if active_page=='notifications' else '' }}">
+                <i class="fas fa-bell"></i> Notifications
+            </a></li>
+            <li><a href="{{ url_for('customer_profile') }}" class="{{ 'active' if active_page=='profile' else '' }}">
+                <i class="fas fa-user"></i> My Profile
+            </a></li>
+            {% endif %}
+
+            <li><a href="{{ url_for('logout') }}"
+                   onclick="return confirm('Are you sure you want to logout?');">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </a></li>
+        </ul>
+    </nav>
+</aside>

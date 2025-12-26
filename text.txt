@@ -1,0 +1,2327 @@
+from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
+from flask_pymongo import PyMongo
+from bson.objectid import ObjectId
+from datetime import datetime, timedelta
+import bcrypt
+import os
+from dotenv import load_dotenv
+import re
+
+load_dotenv()
+
+app = Flask(__name__)
+app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
+app.config["MONGO_URI"] = os.getenv("MONGO_URI")
+app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=7)  # Remember me functionality
+
+mongo = PyMongo(app)
+
+# ========== HELPER FUNCTIONS ==========
+
+# Initialize database with default admin
+def init_db():
+    if not mongo.db.users.find_one({"email": "admin@parcel.com"}):
+        hashed_password = bcrypt.hashpw("admin123".encode('utf-8'), bcrypt.gensalt())
+        mongo.db.users.insert_one({
+            "name": "Admin",
+            "email": "admin@parcel.com",
+            "password": hashed_password,
+            "phone": "0000000000",
+            "role": "admin",
+            "created_at": datetime.now(),
+            "status": "active"
+        })
+        print("Default admin created: admin@parcel.com / admin123")
+
+# Generate tracking ID
+def generate_tracking_id():
+    import random
+    import string
+    return 'TRK' + ''.join(random.choices(string.ascii_uppercase + string.digits, k=10))
+
+# Calculate delivery cost
+def calculate_cost(weight, parcel_type, delivery_type):
+    base_cost = 50
+    weight_cost = float(weight) * 10
+    
+    type_multiplier = {
+        'document': 1.0,
+        'box': 1.2,
+        'fragile': 1.5,
+        'electronics': 1.3
+    }
+    
+    delivery_multiplier = {
+        'standard': 1.0,
+        'express': 1.5
+    }
+    
+    cost = base_cost + weight_cost
+    cost *= type_multiplier.get(parcel_type.lower(), 1.0)
+    cost *= delivery_multiplier.get(delivery_type.lower(), 1.0)
+    
+    return round(cost, 2)
+def login_required():
+    """Simple login required decorator"""
+    def decorator(f):
+        def decorated_function(*args, **kwargs):
+            if 'user_id' not in session:
+                flash('Please login first', 'warning')
+                return redirect(url_for('login'))
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
+# Helper function to create notifications
+def create_notification(user_id, title, message, notification_type):
+    """
+    Create a notification for a user
+    """
+    try:
+        # Ensure user_id is string
+        if isinstance(user_id, ObjectId):
+            user_id = str(user_id)
+        
+        notification_data = {
+            "user_id": ObjectId(user_id),
+            "title": title,
+            "message": message,
+            "type": notification_type,
+            "read": False,
+            "created_at": datetime.now()
+        }
+        return mongo.db.notifications.insert_one(notification_data)
+    except Exception as e:
+        print(f"Error creating notification: {e}")
+        return None
+
+# ========== PUBLIC ROUTES ==========
+
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@app.route('/about')
+def about():
+    return render_template('about.html')
+
+@app.route('/track', methods=['GET', 'POST'])
+def track():
+    if request.method == 'POST':
+        tracking_id = request.form.get('tracking_id')
+        parcel = mongo.db.parcels.find_one({"tracking_id": tracking_id})
+        if parcel:
+            return render_template('track.html', parcel=parcel, found=True)
+        else:
+            flash('Tracking ID not found', 'danger')
+    return render_template('track.html', found=False)
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if 'user_id' in session:
+        role = session.get('role')
+        if role == 'admin':
+            return redirect(url_for('customer_dashboard'))  # Redirect customers to their dashboard
+        elif role == 'staff':
+            return redirect(url_for('customer_dashboard'))  # Redirect customers to their dashboard
+        elif role == 'customer':
+            return redirect(url_for('customer_dashboard'))
+    
+    if request.method == 'POST':
+        email = request.form.get('email')
+        password = request.form.get('password')
+        remember = request.form.get('remember')
+        
+        user = mongo.db.users.find_one({"email": email})
+        
+        if user and bcrypt.checkpw(password.encode('utf-8'), user['password']):
+            session['user_id'] = str(user['_id'])
+            session['email'] = user['email']
+            session['name'] = user['name']
+            session['role'] = user['role']
+            
+            if remember:
+                session.permanent = True
+            
+            # Only customer login for now
+            if user['role'] == 'customer':
+                return redirect(url_for('customer_dashboard'))
+            else:
+                flash('Admin/Staff panel not available in this version', 'info')
+                return redirect(url_for('customer_dashboard'))
+        else:
+            flash('Invalid email or password', 'danger')
+    
+    return render_template('login.html')
+
+@app.route('/signup', methods=['GET', 'POST'])
+def signup():
+    if request.method == 'POST':
+        name = request.form.get('name')
+        email = request.form.get('email')
+        phone = request.form.get('phone')
+        password = request.form.get('password')
+        
+        # Check if user exists
+        if mongo.db.users.find_one({"email": email}):
+            flash('Email already registered', 'danger')
+            return redirect(url_for('signup'))
+        
+        # Validate password
+        if len(password) < 6:
+            flash('Password must be at least 6 characters', 'danger')
+            return redirect(url_for('signup'))
+        
+        # Hash password
+        hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+        
+        # Create user
+        user_data = {
+            "name": name,
+            "email": email,
+            "phone": phone,
+            "password": hashed_password,
+            "role": "customer",
+            "created_at": datetime.now(),
+            "status": "active",
+            "address": ""
+        }
+        
+        mongo.db.users.insert_one(user_data)
+        flash('Registration successful! Please login.', 'success')
+        return redirect(url_for('login'))
+    
+    return render_template('signup.html')
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    flash('Logged out successfully', 'success')
+    return redirect(url_for('index'))
+
+# ========== CUSTOMER ROUTES ==========
+
+@app.route('/customer/dashboard')
+def customer_dashboard():
+    if 'user_id' not in session or session.get('role') != 'customer':
+        return redirect(url_for('login'))
+    
+    customer_id = session['user_id']
+    parcels = list(mongo.db.parcels.find({"customer_id": ObjectId(customer_id)}).sort("created_at", -1))
+    
+    # Count notifications
+    notification_count = mongo.db.notifications.count_documents({
+        "user_id": ObjectId(customer_id),
+        "read": False
+    })
+    
+    return render_template('customer/dashboard.html', 
+                         parcels=parcels[:5], 
+                         notification_count=notification_count)
+
+@app.route('/customer/book', methods=['GET', 'POST'])
+def book_parcel():
+    if 'user_id' not in session or session.get('role') != 'customer':
+        return redirect(url_for('login'))
+    
+    customer_id = session['user_id']
+    customer = mongo.db.users.find_one({"_id": ObjectId(customer_id)})
+    
+    if request.method == 'POST':
+        # Get form data
+        sender_name = request.form.get('sender_name')
+        sender_phone = request.form.get('sender_phone')
+        sender_address = request.form.get('sender_address')
+        sender_pincode = request.form.get('sender_pincode')
+        
+        receiver_name = request.form.get('receiver_name')
+        receiver_phone = request.form.get('receiver_phone')
+        receiver_address = request.form.get('receiver_address')
+        receiver_pincode = request.form.get('receiver_pincode')
+        
+        weight = request.form.get('weight')
+        parcel_type = request.form.get('parcel_type')
+        description = request.form.get('description')
+        delivery_type = request.form.get('delivery_type')
+        pickup_date = request.form.get('pickup_date')
+        
+        # Calculate cost
+        cost = calculate_cost(weight, parcel_type, delivery_type)
+        
+        # Create parcel
+        parcel_data = {
+            "tracking_id": generate_tracking_id(),
+            "customer_id": ObjectId(customer_id),
+            "customer_name": customer['name'],
+            "customer_email": customer['email'],
+            "customer_phone": sender_phone,  # Use form phone
+            "pickup_address": sender_address,
+            "pickup_pincode": sender_pincode,
+            "sender_name": sender_name,
+            "sender_phone": sender_phone,
+            "sender_address": sender_address,
+            "sender_pincode": sender_pincode,
+            "receiver_name": receiver_name,
+            "receiver_phone": receiver_phone,
+            "receiver_address": receiver_address,
+            "receiver_pincode": receiver_pincode,
+            "weight": float(weight),
+            "parcel_type": parcel_type,
+            "description": description,
+            "delivery_type": delivery_type,
+            "pickup_date": datetime.strptime(pickup_date, '%Y-%m-%d'),
+            "cost": cost,
+            "payment_mode": "cod",
+            "payment_status": "pending",
+            "status": "booked",
+            "status_history": [{
+                "status": "booked",
+                "timestamp": datetime.now(),
+                "note": "Parcel booked successfully"
+            }],
+            "created_at": datetime.now(),
+            "updated_at": datetime.now(),
+            "staff_id": None,
+            "staff_name": None,
+            "delivered_at": None
+        }
+        
+        mongo.db.parcels.insert_one(parcel_data)
+        
+        # Create notification
+        create_notification(
+            customer_id,
+            "Parcel Booked Successfully",
+            f"Your parcel has been booked. Tracking ID: {parcel_data['tracking_id']}. Cost: ₹{cost}",
+            "booking"
+        )
+        
+        flash('Parcel booked successfully!', 'success')
+        return redirect(url_for('customer_parcels'))
+    
+    return render_template('customer/book_parcel.html', customer=customer)
+
+@app.route('/customer/parcels')
+def customer_parcels():
+    if 'user_id' not in session or session.get('role') != 'customer':
+        return redirect(url_for('login'))
+    
+    customer_id = session['user_id']
+    parcels = list(mongo.db.parcels.find({"customer_id": ObjectId(customer_id)}).sort("created_at", -1))
+    
+    return render_template('customer/my_parcels.html', parcels=parcels)
+
+@app.route('/customer/track')
+def customer_track():
+    if 'user_id' not in session or session.get('role') != 'customer':
+        return redirect(url_for('login'))
+    
+    customer_id = session['user_id']
+    # Fetch all necessary fields including created_at
+    parcels = list(mongo.db.parcels.find(
+        {"customer_id": ObjectId(customer_id)},
+        {
+            "tracking_id": 1,
+            "status": 1,
+            "created_at": 1,
+            "updated_at": 1,
+            "receiver_name": 1,
+            "receiver_address": 1
+        }
+    ).sort("created_at", -1))
+    
+    return render_template('customer/track.html', parcels=parcels)
+
+@app.route('/customer/notifications')
+def customer_notifications():
+    if 'user_id' not in session or session.get('role') != 'customer':
+        return redirect(url_for('login'))
+    
+    customer_id = session['user_id']
+    notifications = list(mongo.db.notifications.find({"user_id": ObjectId(customer_id)})
+                        .sort("created_at", -1))
+    
+    # Mark as read
+    mongo.db.notifications.update_many(
+        {"user_id": ObjectId(customer_id), "read": False},
+        {"$set": {"read": True}}
+    )
+    
+    return render_template('customer/notifications.html', notifications=notifications)
+
+@app.route('/customer/profile', methods=['GET', 'POST'])
+def customer_profile():
+    if 'user_id' not in session or session.get('role') != 'customer':
+        return redirect(url_for('login'))
+    
+    customer_id = session['user_id']
+    customer = mongo.db.users.find_one({"_id": ObjectId(customer_id)})
+    
+    if request.method == 'POST':
+        name = request.form.get('name')
+        phone = request.form.get('phone')
+        address = request.form.get('address')
+        
+        mongo.db.users.update_one(
+            {"_id": ObjectId(customer_id)},
+            {"$set": {
+                "name": name,
+                "phone": phone,
+                "address": address,
+                "updated_at": datetime.now()
+            }}
+        )
+        
+        session['name'] = name
+        flash('Profile updated successfully', 'success')
+        return redirect(url_for('customer_profile'))
+    
+    return render_template('customer/profile.html', customer=customer)
+
+@app.route('/cancel_parcel/<tracking_id>')
+def cancel_parcel(tracking_id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    
+    parcel = mongo.db.parcels.find_one({"tracking_id": tracking_id})
+    
+    if not parcel:
+        flash('Parcel not found', 'danger')
+        return redirect(url_for('customer_parcels'))
+    
+    # Check if parcel is still in booked status
+    if parcel['status'] != 'booked':
+        flash('Cannot cancel parcel after it has been picked up', 'danger')
+        return redirect(url_for('customer_parcels'))
+    
+    # Update status
+    mongo.db.parcels.update_one(
+        {"tracking_id": tracking_id},
+        {"$set": {
+            "status": "cancelled",
+            "updated_at": datetime.now()
+        }}
+    )
+    
+    flash('Parcel cancelled successfully', 'success')
+    return redirect(url_for('customer_parcels'))
+
+# ========== API ENDPOINTS ==========
+
+@app.route('/api/track/<tracking_id>')
+def api_track(tracking_id):
+    parcel = mongo.db.parcels.find_one({"tracking_id": tracking_id})
+    if parcel:
+        # Convert ObjectId to string for JSON serialization
+        parcel['_id'] = str(parcel['_id'])
+        if 'customer_id' in parcel:
+            parcel['customer_id'] = str(parcel['customer_id'])
+        if 'staff_id' in parcel and parcel['staff_id']:
+            parcel['staff_id'] = str(parcel['staff_id'])
+        return jsonify(parcel)
+    else:
+        return jsonify({"error": "Tracking ID not found"}), 404
+
+# ========== CONTEXT PROCESSORS & ERROR HANDLERS ==========
+
+@app.context_processor
+def utility_processor():
+    def format_date(date_obj):
+        if date_obj:
+            return date_obj.strftime('%Y-%m-%d %H:%M')
+        return ''
+    return dict(format_date=format_date, now=datetime.now)
+
+# Simple error handlers that redirect to home
+@app.errorhandler(404)
+def not_found_error(error):
+    flash('Page not found', 'warning')
+    return redirect(url_for('index'))
+
+@app.errorhandler(500)
+def internal_error(error):
+    flash('Server error occurred', 'danger')
+    return redirect(url_for('index'))
+
+# ========== MAIN EXECUTION ==========
+
+if __name__ == '__main__':
+    with app.app_context():
+        init_db()
+        # Create database indexes
+        mongo.db.notifications.create_index([("user_id", 1), ("read", 1)])
+        mongo.db.parcels.create_index([("tracking_id", 1)], unique=True)
+        mongo.db.users.create_index([("email", 1)], unique=True)
+        mongo.db.parcels.create_index([("status", 1)])
+        print("Database initialized and indexes created")
+    
+    app.run(debug=True, port=5000, host='0.0.0.0')
+
+prevoiuo one 
+    @app.route('/login', methods=['GET', 'POST'])
+def login():
+    if 'user_id' in session:
+        role = session.get('role')
+        if role == 'admin':
+            return redirect(url_for('customer_dashboard'))  # Redirect customers to their dashboard
+        elif role == 'staff':
+            return redirect(url_for('customer_dashboard'))  # Redirect customers to their dashboard
+        elif role == 'customer':
+            return redirect(url_for('customer_dashboard'))
+    
+    if request.method == 'POST':
+        email = request.form.get('email')
+        password = request.form.get('password')
+        remember = request.form.get('remember')
+        
+        user = mongo.db.users.find_one({"email": email})
+        
+        if user and bcrypt.checkpw(password.encode('utf-8'), user['password']):
+            session['user_id'] = str(user['_id'])
+            session['email'] = user['email']
+            session['name'] = user['name']
+            session['role'] = user['role']
+            
+            if remember:
+                session.permanent = True
+            
+            # Only customer login for now
+            if user['role'] == 'customer':
+                return redirect(url_for('customer_dashboard'))
+            else:
+                flash('Admin/Staff panel not available in this version', 'info')
+                return redirect(url_for('customer_dashboard'))
+        else:
+            flash('Invalid email or password', 'danger')
+    
+    return render_template('login.html')
+dashboard.customer
+{% extends "Admin/layout.html" %}
+
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1 class="h3 mb-2">Admin Dashboard</h1>
+        <p class="text-muted">System overview and statistics</p>
+    </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-primary shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                            Total Customers</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_customers }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-users fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-success shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                            Total Parcels</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_parcels }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-box fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-info shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                            Active Staff</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_staff }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-user-tie fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-warning shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                            Monthly Revenue</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">₹{{ monthly_revenue }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-rupee-sign fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Parcel Status Section -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Parcel Status Overview</h6>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-2 mb-3">
+                        <div class="p-3 border rounded bg-light">
+                            <h4 class="text-primary">{{ status_counts.booked }}</h4>
+                            <small class="text-muted">Booked</small>
+                        </div>
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <div class="p-3 border rounded bg-light">
+                            <h4 class="text-info">{{ status_counts.picked }}</h4>
+                            <small class="text-muted">Picked</small>
+                        </div>
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <div class="p-3 border rounded bg-light">
+                            <h4 class="text-warning">{{ status_counts.in_transit }}</h4>
+                            <small class="text-muted">In Transit</small>
+                        </div>
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <div class="p-3 border rounded bg-light">
+                            <h4 class="text-orange">{{ status_counts.out_for_delivery }}</h4>
+                            <small class="text-muted">Out for Delivery</small>
+                        </div>
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <div class="p-3 border rounded bg-light">
+                            <h4 class="text-success">{{ status_counts.delivered }}</h4>
+                            <small class="text-muted">Delivered</small>
+                        </div>
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <div class="p-3 border rounded bg-light">
+                            <h4 class="text-danger">{{ status_counts.cancelled }}</h4>
+                            <small class="text-muted">Cancelled</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Parcels -->
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow">
+            <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                <h6 class="m-0 font-weight-bold text-primary">Recent Parcels</h6>
+                <a href="{{ url_for('admin_parcels') }}" class="btn btn-sm btn-primary">View All</a>
+            </div>
+            <div class="card-body">
+                {% if recent_parcels %}
+                <div class="table-responsive">
+                    <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                        <thead>
+                            <tr>
+                                <th>Tracking ID</th>
+                                <th>Customer</th>
+                                <th>Receiver</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for parcel in recent_parcels %}
+                            <tr>
+                                <td><strong>{{ parcel.tracking_id }}</strong></td>
+                                <td>{{ parcel.customer_name }}</td>
+                                <td>{{ parcel.receiver_name }}</td>
+                                <td>
+                                    <span class="badge bg-{% if parcel.status == 'delivered' %}success{% elif parcel.status == 'cancelled' %}danger{% else %}warning{% endif %}">
+                                        {{ parcel.status|title }}
+                                    </span>
+                                </td>
+                                <td>{{ format_date(parcel.created_at) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-center text-muted">No parcels found</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Quick Actions</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <a href="{{ url_for('add_staff') }}" class="btn btn-outline-primary w-100 d-flex align-items-center justify-content-center">
+                            <i class="fas fa-user-plus me-2"></i> Add Staff
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{{ url_for('admin_parcels') }}" class="btn btn-outline-success w-100 d-flex align-items-center justify-content-center">
+                            <i class="fas fa-box me-2"></i> View Parcels
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{{ url_for('admin_track') }}" class="btn btn-outline-info w-100 d-flex align-items-center justify-content-center">
+                            <i class="fas fa-search me-2"></i> Track Parcel
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{{ url_for('admin_reports') }}" class="btn btn-outline-warning w-100 d-flex align-items-center justify-content-center">
+                            <i class="fas fa-chart-bar me-2"></i> View Reports
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.text-orange {
+    color: #fd7e14 !important;
+}
+.bg-orange {
+    background-color: #fd7e14 !important;
+}
+</style>
+{% endblock %}
+admin dashboard previus
+{% extends "Admin/layout.html" %}
+
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1 class="h3 mb-2">Admin Dashboard</h1>
+        <p class="text-muted">System overview and statistics</p>
+    </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-primary shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                            Total Customers</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_customers }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-users fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-success shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                            Total Parcels</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_parcels }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-box fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-info shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                            Active Staff</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_staff }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-user-tie fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-warning shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                            Monthly Revenue</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">₹{{ monthly_revenue }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-rupee-sign fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Parcel Status Section -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Parcel Status Overview</h6>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-2 mb-3">
+                        <div class="p-3 border rounded bg-light">
+                            <h4 class="text-primary">{{ status_counts.booked }}</h4>
+                            <small class="text-muted">Booked</small>
+                        </div>
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <div class="p-3 border rounded bg-light">
+                            <h4 class="text-info">{{ status_counts.picked }}</h4>
+                            <small class="text-muted">Picked</small>
+                        </div>
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <div class="p-3 border rounded bg-light">
+                            <h4 class="text-warning">{{ status_counts.in_transit }}</h4>
+                            <small class="text-muted">In Transit</small>
+                        </div>
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <div class="p-3 border rounded bg-light">
+                            <h4 class="text-orange">{{ status_counts.out_for_delivery }}</h4>
+                            <small class="text-muted">Out for Delivery</small>
+                        </div>
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <div class="p-3 border rounded bg-light">
+                            <h4 class="text-success">{{ status_counts.delivered }}</h4>
+                            <small class="text-muted">Delivered</small>
+                        </div>
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <div class="p-3 border rounded bg-light">
+                            <h4 class="text-danger">{{ status_counts.cancelled }}</h4>
+                            <small class="text-muted">Cancelled</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Parcels -->
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow">
+            <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                <h6 class="m-0 font-weight-bold text-primary">Recent Parcels</h6>
+                <a href="{{ url_for('admin_parcels') }}" class="btn btn-sm btn-primary">View All</a>
+            </div>
+            <div class="card-body">
+                {% if recent_parcels %}
+                <div class="table-responsive">
+                    <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                        <thead>
+                            <tr>
+                                <th>Tracking ID</th>
+                                <th>Customer</th>
+                                <th>Receiver</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for parcel in recent_parcels %}
+                            <tr>
+                                <td><strong>{{ parcel.tracking_id }}</strong></td>
+                                <td>{{ parcel.customer_name }}</td>
+                                <td>{{ parcel.receiver_name }}</td>
+                                <td>
+                                    <span class="badge bg-{% if parcel.status == 'delivered' %}success{% elif parcel.status == 'cancelled' %}danger{% else %}warning{% endif %}">
+                                        {{ parcel.status|title }}
+                                    </span>
+                                </td>
+                                <td>{{ format_date(parcel.created_at) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-center text-muted">No parcels found</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Quick Actions</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <a href="{{ url_for('add_staff') }}" class="btn btn-outline-primary w-100 d-flex align-items-center justify-content-center">
+                            <i class="fas fa-user-plus me-2"></i> Add Staff
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{{ url_for('admin_parcels') }}" class="btn btn-outline-success w-100 d-flex align-items-center justify-content-center">
+                            <i class="fas fa-box me-2"></i> View Parcels
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{{ url_for('admin_track') }}" class="btn btn-outline-info w-100 d-flex align-items-center justify-content-center">
+                            <i class="fas fa-search me-2"></i> Track Parcel
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{{ url_for('admin_reports') }}" class="btn btn-outline-warning w-100 d-flex align-items-center justify-content-center">
+                            <i class="fas fa-chart-bar me-2"></i> View Reports
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.text-orange {
+    color: #fd7e14 !important;
+}
+.bg-orange {
+    background-color: #fd7e14 !important;
+}
+</style>
+{% endblock %}
+staff.html
+{% extends "Admin/layout.html" %}
+
+{% block title %}Staff Management{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="h3 mb-2">Staff Management</h1>
+                <p class="text-muted">Manage delivery staff and riders</p>
+            </div>
+            <a href="{{ url_for('add_staff') }}" class="btn btn-primary">
+                <i class="fas fa-user-plus"></i> Add New Staff
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">Staff List</h6>
+    </div>
+    <div class="card-body">
+        {% if staff_list %}
+        <div class="table-responsive">
+            <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Phone</th>
+                        <th>Status</th>
+                        <th>Total Deliveries</th>
+                        <th>Joined Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for staff in staff_list %}
+                    <tr>
+                        <td>{{ staff.name }}</td>
+                        <td>{{ staff.email }}</td>
+                        <td>{{ staff.phone }}</td>
+                        <td>
+                            <span class="badge bg-{% if staff.status == 'active' %}success{% else %}danger{% endif %}">
+                                {{ staff.status|title }}
+                            </span>
+                        </td>
+                        <td>{{ staff.total_deliveries or 0 }}</td>
+                        <td>{{ format_date(staff.created_at) }}</td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#viewStaff{{ loop.index }}">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <a href="#" class="btn btn-sm btn-warning">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <button type="button" class="btn btn-sm btn-danger" 
+                                        onclick="deactivateStaff('{{ staff._id }}', '{{ staff.name }}')">
+                                    <i class="fas fa-user-slash"></i>
+                                </button>
+                            </div>
+
+                            <!-- View Staff Modal -->
+                            <div class="modal fade" id="viewStaff{{ loop.index }}" tabindex="-1">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">Staff Details</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <div class="row">
+                                                <div class="col-md-4 text-center mb-3">
+                                                    <div class="staff-avatar bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px; font-size: 2rem;">
+                                                        {{ staff.name[0]|upper }}
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-8">
+                                                    <h5>{{ staff.name }}</h5>
+                                                    <p class="text-muted">{{ staff.email }}</p>
+                                                    <div class="row">
+                                                        <div class="col-6">
+                                                            <small class="text-muted">Phone</small>
+                                                            <p>{{ staff.phone }}</p>
+                                                        </div>
+                                                        <div class="col-6">
+                                                            <small class="text-muted">Status</small>
+                                                            <p>
+                                                                <span class="badge bg-{% if staff.status == 'active' %}success{% else %}danger{% endif %}">
+                                                                    {{ staff.status|title }}
+                                                                </span>
+                                                            </p>
+                                                        </div>
+                                                        <div class="col-6">
+                                                            <small class="text-muted">Total Deliveries</small>
+                                                            <p>{{ staff.total_deliveries or 0 }}</p>
+                                                        </div>
+                                                        <div class="col-6">
+                                                            <small class="text-muted">Joined</small>
+                                                            <p>{{ format_date(staff.created_at) }}</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-users fa-3x text-muted mb-3"></i>
+            <h5>No Staff Members</h5>
+            <p class="text-muted">Add your first staff member to get started</p>
+            <a href="{{ url_for('add_staff') }}" class="btn btn-primary">
+                <i class="fas fa-user-plus"></i> Add Staff
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function deactivateStaff(staffId, staffName) {
+    if (confirm('Are you sure you want to deactivate ' + staffName + '?')) {
+        // Implement deactivation logic here
+        alert('Staff deactivation feature to be implemented');
+    }
+}
+</script>
+{% endblock %}
+
+staff.html
+{% extends "Admin/layout.html" %}
+
+{% block title %}Staff Management{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="h3 mb-2">Staff Management</h1>
+                <p class="text-muted">Manage delivery staff and riders</p>
+            </div>
+            <a href="{{ url_for('add_staff') }}" class="btn btn-primary">
+                <i class="fas fa-user-plus"></i> Add New Staff
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Stats -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-primary shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                            Total Staff</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_staff_count }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-users fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-success shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                            Active Staff</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ active_staff_count }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-user-check fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-info shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                            On Duty</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ on_duty_count }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-truck fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-warning shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                            Total Assignments</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_assignments }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-box fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Staff Table -->
+<div class="card shadow">
+    <div class="card-header py-3 d-flex justify-content-between align-items-center">
+        <h6 class="m-0 font-weight-bold text-primary">Staff List</h6>
+        <a href="{{ url_for('assign_parcel') }}" class="btn btn-sm btn-success">
+            <i class="fas fa-tasks"></i> Assign Parcel
+        </a>
+    </div>
+    <div class="card-body">
+        {% if staff_list %}
+        <div class="table-responsive">
+            <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Role</th>
+                        <th>Email</th>
+                        <th>Phone</th>
+                        <th>Status</th>
+                        <th>Current Assignments</th>
+                        <th>Performance</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for staff in staff_list %}
+                    <tr>
+                        <td>
+                            <strong>{{ staff.name }}</strong>
+                            {% if staff.assigned_parcels and staff.assigned_parcels|length > 0 %}
+                            <span class="badge bg-info ms-1">{{ staff.assigned_parcels|length }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge bg-{{ 'primary' if staff.role == 'delivery_agent' else 'success' if staff.role == 'pickup_agent' else 'secondary' }}">
+                                {{ staff.role|replace('_', ' ')|title }}
+                            </span>
+                        </td>
+                        <td>{{ staff.email }}</td>
+                        <td>{{ staff.phone }}</td>
+                        <td>
+                            <span class="badge bg-{% if staff.status == 'active' %}success{% elif staff.status == 'busy' %}warning{% else %}danger{% endif %}">
+                                {{ staff.status|title }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="progress" style="height: 6px;">
+                                {% set assignment_count = staff.current_assignment_count if staff.current_assignment_count is defined else 0 %}
+                                {% set raw_pct = (assignment_count / 5 * 100) %}
+                                {% set assignment_pct = raw_pct if raw_pct <= 100 else 100 %}
+                                <div class="progress-bar bg-{{ 'success' if assignment_pct < 60 else 'warning' if assignment_pct < 80 else 'danger' }}" 
+                                     role="progressbar" style="width: {{ assignment_pct }}%">
+                                </div>
+                            </div>
+                            <small class="text-muted">{{ assignment_count }} / 5 assigned</small>
+                        </td>
+                        <td>
+                            {% if staff.total_deliveries and staff.total_deliveries > 0 %}
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-star text-warning me-1"></i>
+                                <span>{{ staff.rating or '4.5' }}/5</span>
+                                <small class="text-muted ms-2">({{ staff.total_deliveries }} deliveries)</small>
+                            </div>
+                            {% else %}
+                            <span class="text-muted">No deliveries yet</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <!-- View Assignments Button -->
+                                <a href="{{ url_for('staff_assignments', staff_id=staff._id) }}" 
+                                   class="btn btn-sm btn-info" title="View Assignments">
+                                    <i class="fas fa-tasks"></i>
+                                </a>
+                                
+                                <!-- Assign Parcel Button -->
+                                <button type="button" class="btn btn-sm btn-success assign-parcel-btn" 
+                                        data-staff-id="{{ staff._id }}"
+                                        data-staff-name="{{ staff.name }}"
+                                        title="Assign Parcel">
+                                    <i class="fas fa-box"></i>
+                                </button>
+                                
+                                <!-- View Details Button -->
+                                <button type="button" class="btn btn-sm btn-primary" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#viewStaff{{ loop.index }}">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                
+                                <!-- Edit Button -->
+                                <a href="{{ url_for('edit_staff', staff_id=staff._id) }}" 
+                                   class="btn btn-sm btn-warning">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                
+                                <!-- Toggle Status Button -->
+                                {% if staff.status == 'active' %}
+                                <button type="button" class="btn btn-sm btn-danger" 
+                                        onclick="toggleStaffStatus('{{ staff._id }}', 'inactive', '{{ staff.name }}')"
+                                        title="Deactivate">
+                                    <i class="fas fa-user-slash"></i>
+                                </button>
+                                {% else %}
+                                <button type="button" class="btn btn-sm btn-success" 
+                                        onclick="toggleStaffStatus('{{ staff._id }}', 'active', '{{ staff.name }}')"
+                                        title="Activate">
+                                    <i class="fas fa-user-check"></i>
+                                </button>
+                                {% endif %}
+                            </div>
+
+                            <!-- View Staff Modal -->
+                            <div class="modal fade" id="viewStaff{{ loop.index }}" tabindex="-1">
+                                <div class="modal-dialog modal-lg">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">Staff Details - {{ staff.name }}</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <div class="row">
+                                                <div class="col-md-3 text-center mb-3">
+                                                    <div class="staff-avatar bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center" 
+                                                         style="width: 80px; height: 80px; font-size: 2rem;">
+                                                        {{ staff.name[0]|upper }}
+                                                    </div>
+                                                    <h5 class="mt-2">{{ staff.name }}</h5>
+                                                    <span class="badge bg-{{ 'primary' if staff.role == 'delivery_agent' else 'success' if staff.role == 'pickup_agent' else 'secondary' }}">
+                                                        {{ staff.role|replace('_', ' ')|title }}
+                                                    </span>
+                                                </div>
+                                                <div class="col-md-9">
+                                                    <div class="row">
+                                                        <div class="col-md-6">
+                                                            <h6>Contact Info</h6>
+                                                            <p><strong>Email:</strong> {{ staff.email }}</p>
+                                                            <p><strong>Phone:</strong> {{ staff.phone }}</p>
+                                                            <p><strong>Joined:</strong> {{ format_date(staff.created_at) }}</p>
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <h6>Performance</h6>
+                                                            <p><strong>Status:</strong> 
+                                                                <span class="badge bg-{% if staff.status == 'active' %}success{% elif staff.status == 'busy' %}warning{% else %}danger{% endif %}">
+                                                                    {{ staff.status|title }}
+                                                                </span>
+                                                            </p>
+                                                            <p><strong>Current Assignments:</strong> {{ staff.current_assignment_count or 0 }}</p>
+                                                            <p><strong>Total Deliveries:</strong> {{ staff.total_deliveries or 0 }}</p>
+                                                            <p><strong>Rating:</strong> 
+                                                                <i class="fas fa-star text-warning"></i> {{ staff.rating or '4.5' }}/5
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <!-- Current Assignments Section -->
+                                                    {% if staff.assigned_parcels and staff.assigned_parcels|length > 0 %}
+                                                    <hr>
+                                                    <h6>Current Assignments ({{ staff.assigned_parcels|length }})</h6>
+                                                    <div class="table-responsive">
+                                                        <table class="table table-sm">
+                                                            <thead>
+                                                                <tr>
+                                                                    <th>Parcel ID</th>
+                                                                    <th>Status</th>
+                                                                    <th>Assigned On</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                {% for parcel_id in staff.assigned_parcels[:3] %}
+                                                                <!-- You would fetch parcel details here -->
+                                                                <tr>
+                                                                    <td>{{ parcel_id[:8] }}...</td>
+                                                                    <td><span class="badge bg-warning">Active</span></td>
+                                                                    <td>Today</td>
+                                                                </tr>
+                                                                {% endfor %}
+                                                                {% if staff.assigned_parcels|length > 3 %}
+                                                                <tr>
+                                                                    <td colspan="3" class="text-center">
+                                                                        <small>+ {{ staff.assigned_parcels|length - 3 }} more assignments</small>
+                                                                    </td>
+                                                                </tr>
+                                                                {% endif %}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                    <div class="text-center mt-2">
+                                                        <a href="{{ url_for('staff_assignments', staff_id=staff._id) }}" 
+                                                           class="btn btn-sm btn-outline-primary">
+                                                            View All Assignments
+                                                        </a>
+                                                    </div>
+                                                    {% else %}
+                                                    <div class="alert alert-info mt-3">
+                                                        <i class="fas fa-info-circle"></i> No current assignments
+                                                    </div>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                            <a href="{{ url_for('staff_assignments', staff_id=staff._id) }}" class="btn btn-primary">
+                                                <i class="fas fa-tasks"></i> View Assignments
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-users fa-3x text-muted mb-3"></i>
+            <h5>No Staff Members</h5>
+            <p class="text-muted">Add your first staff member to get started</p>
+            <a href="{{ url_for('add_staff') }}" class="btn btn-primary">
+                <i class="fas fa-user-plus"></i> Add Staff
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Quick Assign Parcel Modal -->
+<div class="modal fade" id="quickAssignModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Assign Parcel</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="quickAssignForm" method="POST" action="{{ url_for('quick_assign_parcel') }}">
+                <div class="modal-body">
+                    <input type="hidden" name="staff_id" id="modalStaffId">
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Staff Member</label>
+                        <div class="p-2 border rounded bg-light" id="modalStaffName">
+                            <!-- Staff name will be inserted here -->
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Select Parcel</label>
+                        <select name="parcel_id" class="form-select" required>
+                            <option value="">-- Select Parcel --</option>
+                            {% for parcel in unassigned_parcels %}
+                            <option value="{{ parcel._id }}">
+                                {{ parcel.tracking_id }} - {{ parcel.receiver_name }} ({{ parcel.status|title }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Instructions (Optional)</label>
+                        <textarea name="instructions" class="form-control" rows="2" 
+                                  placeholder="Add special instructions..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-user-check"></i> Assign Parcel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Quick assign parcel functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const assignButtons = document.querySelectorAll('.assign-parcel-btn');
+    const quickAssignModal = new bootstrap.Modal(document.getElementById('quickAssignModal'));
+    const modalStaffId = document.getElementById('modalStaffId');
+    const modalStaffName = document.getElementById('modalStaffName');
+    
+    assignButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const staffId = this.dataset.staffId;
+            const staffName = this.dataset.staffName;
+            
+            modalStaffId.value = staffId;
+            modalStaffName.innerHTML = `<strong>${staffName}</strong>`;
+            
+            quickAssignModal.show();
+        });
+    });
+    
+    // Form submission
+    document.getElementById('quickAssignForm').addEventListener('submit', function(e) {
+        const submitBtn = this.querySelector('button[type="submit"]');
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Assigning...';
+        submitBtn.disabled = true;
+    });
+});
+
+function toggleStaffStatus(staffId, newStatus, staffName) {
+    const action = newStatus === 'active' ? 'activate' : 'deactivate';
+    if (confirm(`Are you sure you want to ${action} ${staffName}?`)) {
+        fetch(`/admin/toggle-staff-status/${staffId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({status: newStatus})
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to update staff status');
+        });
+    }
+}
+</script>
+
+<style>
+.progress {
+    background-color: #e9ecef;
+    border-radius: 3px;
+}
+
+.progress-bar {
+    border-radius: 3px;
+}
+
+.assign-parcel-btn:hover {
+    background-color: #198754;
+    border-color: #198754;
+    color: white;
+}
+</style>
+{% endblock %}
+ old one<script>
+function filterParcels() {
+    const status = document.getElementById('statusFilter').value;
+    const dateFrom = document.getElementById('dateFrom').value;
+    const dateTo = document.getElementById('dateTo').value;
+    
+    const rows = document.querySelectorAll('.parcel-row');
+    
+    rows.forEach(row => {
+        let show = true;
+        
+        if (status !== 'all' && row.dataset.status !== status) {
+            show = false;
+        }
+        
+        row.style.display = show ? '' : 'none';
+    });
+}
+
+function viewParcelDetails(trackingId) {
+    window.location.href = '/admin/track?tracking_id=' + trackingId;
+}
+
+// function assignParcel(trackingId) {
+//     alert('Assign parcel ' + trackingId + ' to staff (feature to be implemented)');
+// }
+function assignParcel(trackingId) {
+    alert('Assign parcel ' + trackingId + ' to staff (feature to be implemented)');
+}
+
+function updateStatus(trackingId) {
+    alert('Update status for parcel ' + trackingId + ' (feature to be implemented)');
+}
+
+// Initialize date filters to current month
+document.addEventListener('DOMContentLoaded', function() {
+    const today = new Date();
+    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+    const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    
+    document.getElementById('dateFrom').value = firstDay.toISOString().split('T')[0];
+    document.getElementById('dateTo').value = lastDay.toISOString().split('T')[0];
+});
+
+
+<!-- Update the assignParcel function in your script -->
+
+function assignParcel(trackingId) {
+     // Find the row to get parcel ID
+    const row = Array.from(document.querySelectorAll('.parcel-row')).find(row => {
+        return row.querySelector('td strong').textContent === trackingId;
+    });
+    // Set the parcel ID in the hidden input
+    document.getElementById('parcelIdInput').value = '';
+    document.getElementById('parcelMessage').innerHTML = 
+        `Assign parcel <strong>${trackingId}</strong> to staff`;
+    
+    // Find the parcel ID from tracking ID (you might need to pass it differently)
+    // For now, we'll set a placeholder - you need to get the actual parcel ID
+    //old, const parcel = Array.from(document.querySelectorAll('.parcel-row')).find(row => {
+    //     return row.querySelector('td strong').textContent === trackingId;
+    // });
+    
+    // Show the modal
+    const modal = new bootstrap.Modal(document.getElementById('assignParcelModal'));
+    modal.show();
+}
+
+// Also update the dropdown menu link to show modal
+document.querySelector('a[data-bs-target="#assignParcelModal"]').addEventListener('click', function(e) {
+    e.preventDefault();
+    document.getElementById('parcelMessage').innerHTML = 
+        'Assign parcel to staff (select from table first)';
+    document.getElementById('parcelIdInput').value = '';
+    const modal = new bootstrap.Modal(document.getElementById('assignParcelModal'));
+    modal.show();
+});
+</script>
+
+@media (max-width: 768px) {
+    .navbar .container {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .nav-links {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .hero h1 {
+        font-size: 2rem;
+    }
+    
+    .track-form {
+        flex-direction: column;
+    }
+    
+    .dashboard {
+        flex-direction: column;
+    }
+    
+    .sidebar {
+        width: 100%;
+    }
+    
+    .timeline::before {
+        left: 20px;
+    }
+    
+    .timeline-item {
+        width: calc(100% - 40px);
+        left: 40px !important;
+    }
+    
+    .timeline-item::before {
+        left: -30px !important;
+    }
+    /* Additional Status Badge Styles */
+.status-booked {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.status-picked {
+    background-color: #cce5ff;
+    color: #004085;
+    border: 1px solid #b8daff;
+}
+
+.status-transit {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeaa7;
+}
+
+.status-delivered {
+    background-color: #d1ecf1;
+    color: #0c5460;
+    border: 1px solid #bee5eb;
+}
+
+.status-cancelled {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.status-out_for_delivery {
+    background-color: #d6d8f5;
+    color: #2c3e50;
+    border: 1px solid #c8cbf0;
+}
+
+/* Notification badges */
+.notification-badge {
+    display: inline-block;
+    padding: 2px 6px;
+    background-color: #e74c3c;
+    color: white;
+    border-radius: 50%;
+    font-size: 0.8rem;
+    min-width: 20px;
+    text-align: center;
+}
+
+/* Loading spinner */
+.spinner {
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #3498db;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin: 2rem auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Modal styles */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1001;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+}
+
+.modal-content {
+    background-color: white;
+    margin: 10% auto;
+    padding: 2rem;
+    border-radius: 10px;
+    width: 90%;
+    max-width: 500px;
+}
+
+.close-modal {
+    float: right;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #666;
+}@media (max-width: 768px) {
+    /* ... 768px responsive styles ... */
+}
+
+@media (max-width: 576px) {
+    /* ... 576px responsive styles ... */
+}
+}
+
+
+
+
+/* Dashboard Styles */
+.dashboard {
+    display: flex;
+    min-height: 100vh;
+}
+
+.sidebar {
+    width: 250px;
+    background-color: var(--primary-color);
+    color: white;
+    padding: 2rem 1rem;
+}
+
+.sidebar-header {
+    text-align: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.sidebar-nav ul {
+    list-style: none;
+}
+
+.sidebar-nav ul li {
+    margin-bottom: 0.5rem;
+}
+
+.sidebar-nav ul li a {
+    display: block;
+    padding: 0.8rem 1rem;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    transition: background-color 0.3s;
+}
+
+.sidebar-nav ul li a:hover,
+.sidebar-nav ul li a.active {
+    background-color: rgba(255,255,255,0.1);
+}
+
+.main-content {
+    flex: 1;
+    padding: 2rem;
+    background-color: #f5f5f5;
+}
+
+.stats-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 10px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+    text-align: center;
+}
+
+.stat-card h3 {
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+}
+
+.stat-card .number {
+    font-size: 2rem;
+    font-weight: bold;
+    color: var(--secondary-color);
+}
+
+/* Tables */
+.table-container {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+    overflow: hidden;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table th,
+.table td {
+    padding: 1rem;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+.table th {
+    background-color: var(--primary-color);
+    color: white;
+    font-weight: 500;
+}
+
+.table tr:hover {
+    background-color: #f8f9fa;
+}
+
+.status-badge {
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.status-booked {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.status-picked {
+    background-color: #cce5ff;
+    color: #004085;
+}
+
+.status-transit {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.status-delivered {
+    background-color: #d1ecf1;
+    color: #0c5460;
+}
+
+.status-cancelled {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+/* Alerts */
+.alert {
+    padding: 1rem;
+    border-radius: 5px;
+    margin-bottom: 1rem;
+}
+
+.alert-success {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.alert-danger {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+/* Tracking Timeline */
+.timeline {
+    position: relative;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 2rem 0;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 2px;
+    height: 100%;
+    background-color: var(--secondary-color);
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 2rem;
+    width: 50%;
+    padding: 1.5rem;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+}
+
+.timeline-item:nth-child(odd) {
+    left: 0;
+}
+
+.timeline-item:nth-child(even) {
+    left: 50%;
+}
+
+.timeline-item::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 20px;
+    height: 20px;
+    background-color: var(--secondary-color);
+    border-radius: 50%;
+}
+
+.timeline-item:nth-child(odd)::before {
+    right: -10px;
+    transform: translateY(-50%);
+}
+
+.timeline-item:nth-child(even)::before {
+    left: -10px;
+    transform: translateY(-50%);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .navbar .container {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .nav-links {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .hero h1 {
+        font-size: 2rem;
+    }
+    
+    .track-form {
+        flex-direction: column;
+    }
+    
+    .dashboard {
+        flex-direction: column;
+    }
+    
+    .sidebar {
+        width: 100%;
+    }
+    
+    .timeline::before {
+        left: 20px;
+    }
+    
+    .timeline-item {
+        width: calc(100% - 40px);
+        left: 40px !important;
+    }
+    
+    .timeline-item::before {
+        left: -30px !important;
+    }
+    /* Additional Status Badge Styles */
+.status-booked {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.status-picked {
+    background-color: #cce5ff;
+    color: #004085;
+    border: 1px solid #b8daff;
+}
+
+.status-transit {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeaa7;
+}
+
+.status-delivered {
+    background-color: #d1ecf1;
+    color: #0c5460;
+    border: 1px solid #bee5eb;
+}
+
+.status-cancelled {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.status-out_for_delivery {
+    background-color: #d6d8f5;
+    color: #2c3e50;
+    border: 1px solid #c8cbf0;
+}
+
+/* Notification badges */
+.notification-badge {
+    display: inline-block;
+    padding: 2px 6px;
+    background-color: #e74c3c;
+    color: white;
+    border-radius: 50%;
+    font-size: 0.8rem;
+    min-width: 20px;
+    text-align: center;
+}
+
+/* Loading spinner */
+.spinner {
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #3498db;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin: 2rem auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Modal styles */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1001;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+}
+
+.modal-content {
+    background-color: white;
+    margin: 10% auto;
+    padding: 2rem;
+    border-radius: 10px;
+    width: 90%;
+    max-width: 500px;
+}
+
+.close-modal {
+    float: right;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #666;
+}@media (max-width: 768px) {
+    /* ... 768px responsive styles ... */
+}
+
+@media (max-width: 576px) {
+    /* ... 576px responsive styles ... */
+}
+}
+/* Responsive improvements */
+/* @media (max-width: 576px) {
+    .btn {
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+    }
+    
+    .form-container {
+        padding: 1.5rem;
+    }
+    
+    .table {
+        font-size: 0.9rem;
+    }
+    
+    .table th,
+    .table td {
+        padding: 0.5rem;
+    }
+    
+    .stats-cards {
+        grid-template-columns: 1fr;
+    }
+}
+} */
+ 
+ /* ========== GENERAL STYLES ========== */
+:root {
+    --primary-color: #2c3e50;
+    --secondary-color: #3498db;
+    --success-color: #27ae60;
+    --danger-color: #e74c3c;
+    --warning-color: #f39c12;
+    --light-color: #ecf0f1;
+    --dark-color: #2c3e50;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+    color: #333;
+    background-color: #f8f9fa;
+}
+
+/* ========== ADMIN LAYOUT ========== */
+.admin-container {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* Sidebar */
+.admin-sidebar {
+    width: 240px;
+    background: linear-gradient(180deg, #2c3e50 0%, #1a252f 100%);
+    color: white;
+    position: fixed;
+    height: 100vh;
+    overflow-y: auto;
+    padding: 0;
+    box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+    z-index: 100;
+}
+
+.sidebar-header {
+    padding: 1.25rem 1rem;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    margin-bottom: 0.5rem;
+}
+
+.sidebar-header h4 {
+    font-size: 1.25rem;
+    margin-bottom: 0.25rem;
+}
+
+.sidebar-header p {
+    font-size: 0.875rem;
+    margin-bottom: 0.25rem;
+}
+
+.sidebar-header small {
+    font-size: 0.75rem;
+    color: #b0bec5;
+}
+
+.sidebar-nav {
+    list-style: none;
+    padding: 0 0.5rem;
+}
+
+.sidebar-nav li {
+    margin-bottom: 0.25rem;
+}
+
+.sidebar-nav li a {
+    display: flex;
+    align-items: center;
+    padding: 0.6rem 0.75rem;
+    color: #b0bec5;
+    text-decoration: none;
+    border-radius: 4px;
+    transition: all 0.2s;
+    font-size: 0.9rem;
+}
+
+.sidebar-nav li a:hover {
+    background-color: rgba(255,255,255,0.08);
+    color: white;
+}
+
+.sidebar-nav li a.active {
+    background-color: rgba(52, 152, 219, 0.15);
+    color: #3498db;
+    border-left: 3px solid #3498db;
+}
+
+.sidebar-nav li a i {
+    width: 20px;
+    margin-right: 8px;
+    font-size: 0.9rem;
+}
+
+.sidebar-footer {
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(255,255,255,0.1);
+}
+
+/* Main Content */
+.admin-main {
+    flex: 1;
+    margin-left: 240px;
+    min-height: 100vh;
+    background-color: #f8f9fa;
+}
+
+.admin-content {
+    padding: 0.75rem !important;
+}
+
+/* ========== OVERRIDE BOOTSTRAP FOR COMPACT ADMIN ========== */
+
+/* Reduce container padding */
+.admin-main .container-fluid {
+    padding: 0 !important;
+}
+
+/* Compact cards */
+.admin-main .card {
+    margin-bottom: 0.75rem;
+    border-radius: 6px;
+    border: 1px solid #e0e0e0;
+}
+
+.admin-main .card-header {
+    padding: 0.75rem 1rem !important;
+    background-color: white;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.admin-main .card-body {
+    padding: 0.75rem !important;
+}
+
+/* Compact tables */
+.admin-main .table {
+    margin-bottom: 0;
+}
+
+.admin-main .table th,
+.admin-main .table td {
+    padding: 0.5rem 0.75rem !important;
+    vertical-align: middle;
+}
+
+.admin-main .table thead th {
+    background-color: #f8f9fa;
+    border-bottom-width: 1px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    color: #6c757d;
+}
+
+/* Reduce spacing utilities */
+.admin-main .mb-4 { margin-bottom: 1rem !important; }
+.admin-main .mb-3 { margin-bottom: 0.75rem !important; }
+.admin-main .mt-4 { margin-top: 1rem !important; }
+.admin-main .py-3 { padding-top: 0.5rem !important; padding-bottom: 0.5rem !important; }
+.admin-main .px-4 { padding-left: 0.75rem !important; padding-right: 0.75rem !important; }
+
+/* Compact alerts */
+.admin-main .alert {
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 0.75rem;
+    border-radius: 4px;
+}
+
+/* Compact buttons */
+.admin-main .btn {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+}
+
+/* Compact headings */
+.admin-main h1 { font-size: 1.5rem !important; margin-bottom: 0.5rem !important; }
+.admin-main h2 { font-size: 1.3rem !important; margin-bottom: 0.5rem !important; }
+.admin-main h3 { font-size: 1.1rem !important; margin-bottom: 0.5rem !important; }
+
+/* Badges */
+.badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    font-weight: 500;
+}
+
+/* Form controls */
+.admin-main .form-control,
+.admin-main .form-select {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+    height: calc(1.5em + 0.75rem);
+}

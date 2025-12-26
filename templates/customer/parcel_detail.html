@@ -1,0 +1,78 @@
+{% extends "layout.html" %}
+{% block title %}Parcel Details{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <h2>Customer Panel</h2>
+            <p>Welcome, {{ session.name }}</p>
+        </div>
+        <nav class="sidebar-nav">
+            <ul>
+                <li><a href="{{ url_for('customer_dashboard') }}"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                <li><a href="{{ url_for('book_parcel') }}"><i class="fas fa-box"></i> Book New Parcel</a></li>
+                <li><a href="{{ url_for('customer_parcels') }}" class="active"><i class="fas fa-list"></i> My Parcels</a></li>
+                <li><a href="{{ url_for('customer_track') }}"><i class="fas fa-map-marker-alt"></i> Track Parcel</a></li>
+                <li><a href="{{ url_for('customer_notifications') }}"><i class="fas fa-bell"></i> Notifications</a></li>
+                <li><a href="{{ url_for('customer_profile') }}"><i class="fas fa-user"></i> My Profile</a></li>
+                <li><a href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+            </ul>
+        </nav>
+    </aside>
+
+    <main class="main-content">
+        <h1>Parcel Details</h1>
+
+        <div class="card mb-3">
+            <div class="card-header">
+                <h3>Tracking ID: {{ parcel.tracking_id }}</h3>
+            </div>
+            <div class="card-body">
+                <p><strong>Status:</strong>
+                    <span class="status-badge status-{{ parcel.status }}">
+                        {{ parcel.status|upper }}
+                    </span>
+                </p>
+                <p><strong>Booked On:</strong> {{ parcel.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                <p><strong>Delivery Type:</strong> {{ parcel.delivery_type|title }}</p>
+                <p><strong>Payment:</strong> {{ parcel.payment_mode|upper }} ({{ parcel.payment_status|title }})</p>
+                <p><strong>Amount:</strong> ₹{{ parcel.cost }}</p>
+            </div>
+        </div>
+
+        <div class="card mb-3">
+            <div class="card-header">
+                <h3>Sender Details</h3>
+            </div>
+            <div class="card-body">
+                <p><strong>Name:</strong> {{ parcel.sender_name }}</p>
+                <p><strong>Phone:</strong> {{ parcel.sender_phone }}</p>
+                <p><strong>Address:</strong> {{ parcel.sender_address }}, {{ parcel.sender_pincode }}</p>
+            </div>
+        </div>
+
+        <div class="card mb-3">
+            <div class="card-header">
+                <h3>Receiver Details</h3>
+            </div>
+            <div class="card-body">
+                <p><strong>Name:</strong> {{ parcel.receiver_name }}</p>
+                <p><strong>Phone:</strong> {{ parcel.receiver_phone }}</p>
+                <p><strong>Address:</strong> {{ parcel.receiver_address }}, {{ parcel.receiver_pincode }}</p>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3>Parcel Info</h3>
+            </div>
+            <div class="card-body">
+                <p><strong>Weight:</strong> {{ parcel.weight }} kg</p>
+                <p><strong>Type:</strong> {{ parcel.parcel_type|title }}</p>
+                <p><strong>Description:</strong> {{ parcel.description or 'N/A' }}</p>
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}
