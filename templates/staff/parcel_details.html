@@ -1,0 +1,111 @@
+{% extends "layout.html" %}
+{% block title %}Parcel Details{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <h2>👨‍🔧 Staff Panel</h2>
+            <p>{{ session.name }}</p>
+        </div>
+        <nav class="sidebar-nav">
+            <ul>
+                <li>
+                    <a href="{{ url_for('staff_dashboard') }}">
+                        <i class="fas fa-arrow-left"></i> Back
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('logout') }}">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main-content">
+
+        <h1>📦 Parcel Details</h1>
+
+        <!-- BASIC INFO -->
+        <div class="card mb-4">
+            <div class="card-header">Parcel Information</div>
+            <div class="card-body">
+                <p><strong>Tracking ID:</strong> {{ parcel.tracking_id }}</p>
+                <p><strong>Customer:</strong> {{ parcel.customer_name }}</p>
+                <p><strong>Receiver:</strong> {{ parcel.receiver_name }}</p>
+                <p><strong>Address:</strong> {{ parcel.receiver_address }}</p>
+
+                <span class="status-badge status-{{ parcel.status }}">
+                    {{ parcel.status|replace('_',' ')|title }}
+                </span>
+            </div>
+        </div>
+
+        <!-- STATUS TIMELINE -->
+        <div class="card mb-4">
+            <div class="card-header">Status Timeline</div>
+            <div class="card-body">
+                <ul class="timeline">
+                    {% for h in parcel.status_history|reverse %}
+                    <li>
+                        <strong>{{ h.status|replace('_',' ')|title }}</strong>
+                        <div class="text-muted">
+                            {{ h.timestamp.strftime('%d %b %Y %I:%M %p') }}
+                            {% if h.updated_by %}
+                                • by {{ h.updated_by }}
+                            {% endif %}
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+
+        <!-- ACTIONS
+        <div class="card">
+            <div class="card-header">Update Status</div>
+            <div class="card-body">
+                <form method="POST"
+                      action="{{ url_for('staff_update_parcel', tracking_id=parcel.tracking_id) }}">
+
+                    {% if parcel.status == 'booked' %}
+                        <button name="status" value="picked"
+                                class="btn btn-success w-100">
+                            Mark as Picked
+                        </button>
+
+                    {% elif parcel.status == 'picked' %}
+                        <button name="status" value="in_transit"
+                                class="btn btn-info w-100">
+                            Mark In Transit
+                        </button>
+
+                    {% elif parcel.status == 'in_transit' %}
+                        <button name="status" value="out_for_delivery"
+                                class="btn btn-warning w-100">
+                            Out for Delivery
+                        </button>
+
+                    {% elif parcel.status == 'out_for_delivery' %}
+                        <button name="status" value="delivered"
+                                class="btn btn-primary w-100">
+                            Mark Delivered
+                        </button>
+
+                    {% else %}
+                        <div class="alert alert-success text-center">
+                            ✅ Parcel Delivered Successfully
+                        </div>
+                    {% endif %}
+                </form>
+            </div>
+        </div> -->
+
+    </main>
+</div>
+{% endblock %}

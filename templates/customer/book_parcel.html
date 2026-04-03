@@ -9,7 +9,7 @@
             <h2>Customer Panel</h2>
             <p>Welcome, {{ session.name }}</p>
         </div>
-        <nav class="sidebar-nav">
+       <nav class="sidebar-nav">
             <ul>
                 <li>
                     <a href="{{ url_for('customer_dashboard') }}">
@@ -32,7 +32,7 @@
                     </a>
                 </li>
                 <li>
-                    <a href="{{ url_for('customer_notifications') }}" class="active">
+                    <a href="{{ url_for('customer_notifications') }}">
                         <i class="fas fa-bell"></i> Notifications
                         {% if notifications|selectattr('read', 'equalto', false)|list|length > 0 %}
                         <span class="notification-badge">
@@ -42,18 +42,25 @@
                     </a>
                 </li>
                 <li>
+                  <a href="{{ url_for('customer_feedback_panel') }}">
+                        <i class="fas fa-star"></i> Feedback
+                    </a>
+                </li>
+                <li>
                     <a href="{{ url_for('customer_profile') }}">
                         <i class="fas fa-user"></i> My Profile
                     </a>
                 </li>
-                <li>
-                    <a href="{{ url_for('logout') }}">
-                        <i class="fas fa-sign-out-alt"></i> Logout
-                    </a>
-                </li>
+        
+<a href="{{ url_for('logout') }}" 
+   onclick="return confirm('Are you sure you want to log out?');">
+    <i class="fas fa-sign-out-alt"></i> Logout
+</a>
+
             </ul>
         </nav>
     </aside>
+
 
     <main class="main-content">
         <h1>Book New Parcel</h1>
@@ -65,8 +72,20 @@
                 <h3 style="margin-bottom: 1rem; color: var(--primary-color); border-bottom: 2px solid #3498db; padding-bottom: 0.5rem;">
                     <i class="fas fa-user"></i> Sender Details
                 </h3>
-                
-                <div class="form-group">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+    
+    <div class="form-group">
+        <label>Sender Name *</label>
+        <input type="text" name="sender_name" class="form-control" value="{{ customer.name }}">
+    </div>
+
+    <div class="form-group">
+        <label>Sender Phone *</label>
+        <input type="text" name="sender_phone" class="form-control" value="{{ customer.phone }}">
+    </div>
+
+</div>
+                <!-- <div class="form-group">
                     <label for="sender_name">Sender Name *</label>
                     <input type="text" id="sender_name" name="sender_name" class="form-control" 
                            value="{{ customer.name }}" required>
@@ -76,7 +95,7 @@
                     <label for="sender_phone">Sender Phone *</label>
                     <input type="tel" id="sender_phone" name="sender_phone" class="form-control" 
                            value="{{ customer.phone }}" required>
-                </div>
+                </div> -->
 
                 <div class="form-group">
                     <label for="sender_address">Pickup Address *</label>
@@ -84,18 +103,39 @@
                               rows="3" required placeholder="Enter full pickup address">{{ customer.address or '' }}</textarea>
                 </div>
 
-                <div class="form-group">
+                 <div class="form-group">
                     <label for="sender_pincode">Pickup Pincode *</label>
                     <input type="text" id="sender_pincode" name="sender_pincode" class="form-control" 
                            required placeholder="e.g., 560001">
-                </div>
-
+                </div> 
+                
+<label>Sender City *</label>
+<select name="sender_city" class="form-control" required>
+    <option value="">Select City</option>
+    {% for city in cities %}
+        <option value="{{ city }}">{{ city }}</option>
+    {% endfor %}
+</select>
                 <!-- Receiver Details Section -->
                 <h3 style="margin: 2rem 0 1rem 0; color: var(--primary-color); border-bottom: 2px solid #3498db; padding-bottom: 0.5rem;">
                     <i class="fas fa-user-friends"></i> Receiver Details
                 </h3>
-                
-                <div class="form-group">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+    
+    <div class="form-group">
+        <label>Receiver Name *</label>
+        <input type="text" name="receiver_name" class="form-control" 
+               placeholder="Enter receiver name" required>
+    </div>
+
+    <div class="form-group">
+        <label>Receiver Phone *</label>
+        <input type="text" name="receiver_phone" class="form-control" 
+               placeholder="Enter receiver phone" required>
+    </div>
+
+</div>
+                <!-- <div class="form-group">
                     <label for="receiver_name">Receiver Name *</label>
                     <input type="text" id="receiver_name" name="receiver_name" class="form-control" 
                            required placeholder="Enter receiver's full name">
@@ -105,7 +145,7 @@
                     <label for="receiver_phone">Receiver Phone *</label>
                     <input type="tel" id="receiver_phone" name="receiver_phone" class="form-control" 
                            required placeholder="Enter receiver's phone number">
-                </div>
+                </div> -->
 
                 <div class="form-group">
                     <label for="receiver_address">Delivery Address *</label>
@@ -156,7 +196,7 @@
                     <select id="delivery_type" name="delivery_type" class="form-control" required>
                         <option value="standard">Standard (3-5 days)</option>
                         <option value="express">Express (1-2 days)</option>
-                        <option value="same-day">Same Day (Extra charges apply)</option>
+                        <!-- <option value="same_day">Same_day (Extra charges apply)</option> -->
                     </select>
                 </div>
 
@@ -175,16 +215,31 @@
                     <small style="color: #666;">Cost calculated based on weight and parcel type</small>
                 </div>
 
-                <!-- Payment Section -->
-                <h3 style="margin: 2rem 0 1rem 0; color: var(--primary-color); border-bottom: 2px solid #3498db; padding-bottom: 0.5rem;">
-                    <i class="fas fa-credit-card"></i> Payment
-                </h3>
                 
-                <div style="background: #f8f9fa; padding: 1rem; border-radius: 5px; margin-bottom: 2rem;">
-                    <p><strong>Mode:</strong> Cash on Delivery (COD)</p>
-                    <p><strong>Payment Status:</strong> Will be marked as "Pending" until delivery</p>
-                </div>
+             <!-- Payment Section -->
+<h3 style="margin: 2rem 0 1rem 0; color: var(--primary-color); border-bottom: 2px solid #3498db; padding-bottom: 0.5rem;">
+    <i class="fas fa-credit-card"></i> Payment
+</h3>
 
+<div class="form-group">
+    <label>Payment Mode *</label>
+    <div style="display:flex; gap:20px;">
+        <label>
+            <input type="radio" name="payment_mode" value="cod" checked> Cash on Delivery (COD)
+        </label>
+        <label>
+            <input type="radio" name="payment_mode" value="online"> Online Payment (UPI / Card)
+        </label>
+    </div>
+</div>
+
+<div id="online-payment-box" style="display:none; background:#eef9ff; padding:1rem; border-radius:6px;">
+    <p><strong>Online Payment:</strong></p>
+    <p>✔ UPI (GPay, PhonePe, Paytm)</p>
+    <p>✔ Debit / Credit Card</p>
+    <p>✔ Net Banking</p>
+    <small class="text-muted">You will be redirected to secure payment after booking.</small>
+</div>
                 <button type="submit" class="btn btn-success" style="width: 100%; padding: 1rem; font-size: 1.1rem;">
                     <i class="fas fa-check-circle"></i> Book Parcel Now
                 </button>
@@ -224,8 +279,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Delivery type multiplier
             const deliveryMultiplier = {
                 'standard': 1.0,
-                'express': 1.5,
-                'same-day': 2.0
+                'express': 1.5
             };
             
             cost *= typeMultiplier[parcelType] || 1.0;
@@ -249,5 +303,21 @@ document.addEventListener('DOMContentLoaded', function() {
         pickupDateInput.min = today;
     }
 });
+document.addEventListener("DOMContentLoaded", function () {
+    const paymentRadios = document.querySelectorAll('input[name="payment_mode"]');
+    const onlineBox = document.getElementById('online-payment-box');
+
+    paymentRadios.forEach(radio => {
+        radio.addEventListener('change', function () {
+            if (this.value === "online") {
+                onlineBox.style.display = "block";
+            } else {
+                onlineBox.style.display = "none";
+            }
+        });
+    });
+});
+
 </script>
+
 {% endblock %}

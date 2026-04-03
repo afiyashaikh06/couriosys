@@ -1,0 +1,179 @@
+{% extends "layout.html" %}
+{% block title %}Staff Dashboard{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <h2>👨‍🔧 Staff Panel</h2>
+            <p>{{ staff.name if staff else session.get("name", "Staff") }}</p>
+        </div>
+        <nav class="sidebar-nav">
+            <ul>
+                <li>
+                    <a href="{{ url_for('staff_dashboard') }}" class="active">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('staff_notifications') }}" class="active">
+                        <i class="fas fa-bell   "></i>notification
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('logout') }}">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </aside>
+<div style="position:absolute; top:20px; right:30px;">
+    <a href="{{ url_for('staff_notifications') }}" style="text-decoration:none; font-size:20px;">
+        🔔
+        {% if notification_count > 0 %}
+            <span style="
+                background:red;
+                color:white;
+                border-radius:50%;
+                padding:3px 8px;
+                font-size:12px;">
+                {{ notification_count }}
+            </span>
+        {% endif %}
+    </a>
+</div>
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
+
+        <h1 class="mb-3">📦 My Assigned Parcels</h1>
+
+        <!-- SUMMARY CARDS -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <p><strong>Branch:</strong> {{ staff.branch_name if staff else "N/A" }}</p>
+                <p><strong>Total Assigned:</strong> {{ total_assigned or 0 }}</p>
+                <p><strong>Pending:</strong> {{ pending_count or 0 }}</p>
+                <p><strong>Delivered Today:</strong> {{ delivered_today or 0 }}</p>
+            </div>
+        </div>
+
+        <!-- PARCEL LIST -->
+        <div class="card">
+            <div class="card-header">
+                <h3>Assigned Parcels</h3>
+            </div>
+
+            <div class="card-body">
+                {% if parcels and parcels|length > 0 %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead>
+                            <tr>
+                                <th>Tracking ID</th>
+                                <th>Receiver</th>
+                                <th>Address</th>
+                                <th>Status</th>
+                                <th>Last Update</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            {% for parcel in parcels %}
+                            <tr>
+                                <td>{{ parcel.tracking_id }}</td>
+                                <td>{{ parcel.receiver_name }}</td>
+                                <td>{{ parcel.receiver_address[:35] }}…</td>
+
+                                <td>
+                                    <span class="badge 
+                                        {% if parcel.status == 'delivered' %}bg-success
+                                        {% elif parcel.status == 'out_for_delivery' %}bg-warning
+                                        {% elif parcel.status == 'in_transit' %}bg-info
+                                        {% elif parcel.status == 'picked' %}bg-secondary
+                                        {% else %}bg-light text-dark{% endif %}">
+                                        {{ parcel.status.replace('_',' ')|title }}
+                                    </span>
+                                </td>
+
+                                <td>{{ format_date(parcel.updated_at) }}</td>
+
+                                <td style="min-width:180px;">
+                                    <div class="d-flex flex-column gap-2">
+
+                                        {% if parcel.status != 'delivered' %}
+                                        <form method="POST"
+                                              action="{{ url_for('staff_update_parcel', tracking_id=parcel.tracking_id) }}">
+
+                                            {% if parcel.status == 'booked' %}
+                                            <button name="status" value="picked" class="btn  btn-success w-100">✅ Picked</button>
+
+                                            {% elif parcel.status == 'picked' %}
+                                            <button name="status" value="in_transit" class="btn  btn-info w-100">🚛 In Transit</button>
+
+                                            {% elif parcel.status == 'in_transit' %}
+                                            <button name="status" value="out_for_delivery" class="btn  btn-warning w-100">🚚 Out for Delivery</button>
+
+                                            {% elif parcel.status == 'out_for_delivery' %}
+                                            <button name="status" value="delivered" class="btn   btn-primary w-100">📦 Delivered</button>
+                                            {% endif %}
+                                        </form>
+                                        {% endif %}
+
+                                        {% if parcel.payment_status != 'paid' and parcel.status == 'delivered' %}
+                                        <form method="POST" action="{{ url_for('staff_mark_paid', tracking_id=parcel.tracking_id) }}">
+                                            <button type="submit" class="btn btn-success w-100">💰 Mark as Paid</button>
+                                        </form>
+                                        {% endif %}
+
+                                        <div class="d-flex gap-2">
+                                            <a href="{{ url_for('staff_parcel_details', tracking_id=parcel.tracking_id) }}"
+                                               class="btn btn-sm btn-outline-secondary w-50">👁 View</a>
+
+                                            <a href="{{ url_for('staff_generate_qr', tracking_id=parcel.tracking_id) }}"
+                                               class="btn btn-sm btn-outline-dark w-50">
+                                                <i class="fas fa-qrcode"></i>
+                                            </a>
+                                        </div>
+
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                    <p class="text-muted">No parcels assigned yet.</p>
+                {% endif %}
+            </div>
+        </div>
+
+    </main>
+</div>
+
+<!-- 🔔 SocketIO Notification -->
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<script>
+const socket = io({
+    transports: ["websocket"],
+    withCredentials: true
+});
+
+socket.on("connect", () => {
+    console.log("✅ Connected to server");
+});
+
+socket.on("new_assignment", function(data) {
+    console.log("📦 New parcel:", data);
+
+    alert("📦 New Parcel Assigned!\nTracking ID: " + data.tracking_id);
+
+    // refresh to update bell count
+    location.reload();
+});
+</script>
+{% endblock %}

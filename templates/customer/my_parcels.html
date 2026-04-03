@@ -9,7 +9,7 @@
             <h2>Customer Panel</h2>
             <p>Welcome, {{ session.name }}</p>
         </div>
-      <nav class="sidebar-nav">
+       <nav class="sidebar-nav">
             <ul>
                 <li>
                     <a href="{{ url_for('customer_dashboard') }}">
@@ -32,7 +32,7 @@
                     </a>
                 </li>
                 <li>
-                    <a href="{{ url_for('customer_notifications') }}" class="active">
+                    <a href="{{ url_for('customer_notifications') }}">
                         <i class="fas fa-bell"></i> Notifications
                         {% if notifications|selectattr('read', 'equalto', false)|list|length > 0 %}
                         <span class="notification-badge">
@@ -40,17 +40,22 @@
                         </span>
                         {% endif %}
                     </a>
+                </li> <li>
+                  <a href="{{ url_for('customer_feedback_panel') }}">
+                        <i class="fas fa-star"></i> Feedback
+                    </a>
                 </li>
                 <li>
                     <a href="{{ url_for('customer_profile') }}">
                         <i class="fas fa-user"></i> My Profile
                     </a>
                 </li>
-                <li>
-                    <a href="{{ url_for('logout') }}">
-                        <i class="fas fa-sign-out-alt"></i> Logout
-                    </a>
-                </li>
+        
+<a href="{{ url_for('logout') }}" 
+   onclick="return confirm('Are you sure you want to log out?');">
+    <i class="fas fa-sign-out-alt"></i> Logout
+</a>
+
             </ul>
         </nav>
     </aside>
@@ -62,79 +67,70 @@
         <div class="table-container">
             <table class="table">
                 <thead>
-                    <tr>
-                        <th>Tracking ID</th>
-                        <th>Receiver</th>
-                        <th>Receiver Phone</th>
-                        <th>Weight</th>
-                        <th>Cost</th>
-                        <th>Status</th>
-                        <th>Date</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for parcel in parcels %}
-                    <tr>
-                        <td>{{ parcel.tracking_id }}</td>
-                        <td>{{ parcel.receiver_name }}</td>
-                        <td>{{ parcel.receiver_phone }}</td>
-                        <td>{{ parcel.weight }} kg</td>
-                        <td>₹ {{ parcel.cost }}</td>
-                        <td>
-                            <span class="status-badge status-{{ parcel.status }}">
-                                {{ parcel.status|upper }}
-                            </span>
-                        </td>
-                        <td>{{ parcel.created_at.strftime('%Y-%m-%d') }}</td>
-                        <td>
-                             <!-- View button
-    <a href="{{ url_for('customer_parcel_detail', tracking_id=parcel.tracking_id) }}"
-       class="btn btn-sm"
-       style="padding: 0.3rem 0.8rem;">
-        View
- 
-    Delete button: only show if booked AND within 2 days -->
-    <!-- {% if parcel.status == 'booked' and (now() - parcel.created_at).days <= 2 %}
-    <a href="/cancel_parcel/{{ parcel.tracking_id }}"
-       class="btn btn-sm"
-       style="padding: 0.3rem 0.8rem;"
-       onclick="return confirm('Cancel this parcel?');">
-        Delete 
-                            </a> -->
-                            
-    <!-- View: always -->
-    <a href="{{ url_for('customer_parcel_detail', tracking_id=parcel.tracking_id) }}"
-       class="btn btn-sm"
-       style="padding: 0.3rem 0.6rem;">
-        View
-    </a>
-
-    {# Edit + Delete only if booked AND within 2 days #}
-    {% set days_diff = (now() - parcel.created_at).days %}
-    {% if parcel.status|lower == 'booked' and days_diff <= 2 %}
-
-        <a href="{{ url_for('edit_parcel', tracking_id=parcel.tracking_id) }}"
-           class="btn btn-sm"
-           style="padding: 0.2rem 0.6rem;">
-            Edit
-        </a>
-
-        <a href="{{ url_for('cancel_parcel', tracking_id=parcel.tracking_id) }}"
-           class="btn btn-sm"
-           style="padding: 0.2rem 0.6rem;"
-           onclick="return confirm('Cancel this parcel?');">
-            Delete
-        </a>
-    {% endif %}
+    <tr>
+        <th>Tracking ID</th>
+        <th>Receiver</th>
+        <th>Phone</th>
+        <th>Weight</th>
+        <th>Cost</th>
+        <th>Status</th>
+        <th>Date</th>
+        <th style="width: 140px;">Actions</th> <!-- Fixed width -->
+    </tr>
+</thead>
+    <tbody>
+{% for parcel in parcels %}
+<tr>
+    <td><strong>#{{ parcel.tracking_id }}</strong></td>
+    <td>{{ parcel.receiver_name }}</td>
+    <td>{{ parcel.receiver_phone }}</td>
+    <td>{{ parcel.weight }} kg</td>
+    <td>₹ {{ parcel.cost }}</td>
+    <td>
+    <!-- Status Badge -->
+    <span class="status-badge status-{{ parcel.status }}">
+        {{ parcel.status|title }}
+    </span>
+    
+    <!-- MINI Progress Bar -->
+    <div class="progress mt-1" style="height: 6px;">
+        {% if parcel.status == 'booked' %}
+            <div class="progress-bar bg-primary" style="width: 25%"></div>
+        {% elif parcel.status == 'picked_up' %}
+            <div class="progress-bar bg-info" style="width: 50%"></div>
+        {% elif parcel.status == 'out_for_delivery' %}
+            <div class="progress-bar bg-warning" style="width: 75%"></div>
+        {% elif parcel.status == 'delivered' %}
+            <div class="progress-bar bg-success" style="width: 100%"></div>
+        {% else %}
+            <div class="progress-bar bg-secondary" style="width: 0%"></div>
+        {% endif %}
+    </div>
 </td>
 
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+    <td>{{ parcel.created_at.strftime('%Y-%m-%d') }}</td>
+    <td class="text-center">
+        <!-- 🔥 PRIMARY: TRACK LIVE (Always) -->
+        <a href="/track?tracking_id={{ parcel.tracking_id }}" 
+           class="btn btn-sm ">
+            <i class="fas fa-map-marker-alt me-1"></i> Track
+        </a>
+        <!-- SECONDARY: VIEW (Always) -->
+        <br><small>
+        <a href="{{ url_for('customer_parcel_detail', tracking_id=parcel.tracking_id) }}"
+           class="btn btn-sm ">
+            <i class="fas fa-eye me-1"></i> View
+        </a>
+        </small>
+        <a href="{{ url_for('generate_invoice', tracking_id=parcel.tracking_id) }}" 
+   class="btn">
+   Download Invoice
+</a>
+    </td>
+</tr>
+{% endfor %}
+</tbody>
+  </table>
         </div>
         {% else %}
         <div style="text-align: center; padding: 3rem; background: white; border-radius: 10px;">

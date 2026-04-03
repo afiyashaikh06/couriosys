@@ -10,13 +10,52 @@
         </div>
         <nav class="sidebar-nav">
             <ul>
-                <li><a href="{{ url_for('customer_dashboard') }}"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
-                <li><a href="{{ url_for('book_parcel') }}"><i class="fas fa-box"></i> Book New Parcel</a></li>
-                <li><a href="{{ url_for('customer_parcels') }}" class="active"><i class="fas fa-list"></i> My Parcels</a></li>
-                <li><a href="{{ url_for('customer_track') }}"><i class="fas fa-map-marker-alt"></i> Track Parcel</a></li>
-                <li><a href="{{ url_for('customer_notifications') }}"><i class="fas fa-bell"></i> Notifications</a></li>
-                <li><a href="{{ url_for('customer_profile') }}"><i class="fas fa-user"></i> My Profile</a></li>
-                <li><a href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                <li>
+                    <a href="{{ url_for('customer_dashboard') }}">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('book_parcel') }}">
+                        <i class="fas fa-box"></i>Book New Parcel
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('customer_parcels') }}">
+                        <i class="fas fa-list"></i> My Parcels
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('customer_track') }}">
+                        <i class="fas fa-map-marker-alt"></i> Track Parcel
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('customer_notifications') }}">
+                        <i class="fas fa-bell"></i> Notifications
+                        {% if notifications|selectattr('read', 'equalto', false)|list|length > 0 %}
+                        <span class="notification-badge">
+                            {{ notifications|selectattr('read', 'equalto', false)|list|length }}
+                        </span>
+                        {% endif %}
+                    </a>
+                </li>
+                <li>
+                  <a href="{{ url_for('customer_feedback_panel') }}">
+                        <i class="fas fa-star"></i> Feedback
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('customer_profile') }}">
+                        <i class="fas fa-user"></i> My Profile
+                    </a>
+                </li>
+        
+<a href="{{ url_for('logout') }}" 
+   onclick="return confirm('Are you sure you want to log out?');">
+    <i class="fas fa-sign-out-alt"></i> Logout
+</a>
+
             </ul>
         </nav>
     </aside>

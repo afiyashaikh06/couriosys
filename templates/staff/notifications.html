@@ -1,0 +1,56 @@
+{% extends "layout.html" %}
+{% block title %}Notifications{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <h2>👨‍🔧 Staff Panel</h2>
+            <p>{{ session.get("name", "Staff") }}</p>
+        </div>
+        <nav class="sidebar-nav">
+            <ul>
+                <li>
+                    <a href="{{ url_for('staff_dashboard') }}">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('staff_notifications') }}" class="active">
+                        <i class="fas fa-bell"></i> Notifications
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('logout') }}">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
+        <h2>🔔 Notifications</h2>
+
+        {% if notifications %}
+            <ul class="list-group mt-3">
+                {% for note in notifications %}
+                    <li class="list-group-item">
+                        <strong>{{ note.title }}</strong><br>
+                        {{ note.message }}<br>
+                        <small class="text-muted">
+                            {{ note.created_at.strftime("%d %b %Y %H:%M") }}
+                        </small>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="text-muted mt-3">No notifications yet.</p>
+        {% endif %}
+    </main>
+
+</div>
+{% endblock %}

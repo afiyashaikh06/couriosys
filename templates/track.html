@@ -1,130 +1,279 @@
 {% extends "layout.html" %}
-
-{% block title %}Track Parcel - Courier Management System{% endblock %}
+{% block title %}Track Order{% endblock %}
 
 {% block content %}
-    <nav class="navbar">
-        <div class="container">
-            <a href="/" class="logo">CourioSys</a>
-            <ul class="nav-links">
-                <li><a href="/">Home</a></li>
-                <li><a href="/about">About Us</a></li>
-                <li><a href="/track">Track Parcel</a></li>
-                <li><a href="/signup" class="btn">Sign Up</a></li>
-                <li><a href="/login" class="btn">Login</a></li>
-            </ul>
-        </div>
-    </nav>
-
-    <div class="container">
-        <div class="form-container">
-            <h2 style="text-align: center; margin-bottom: 2rem;">Track Your Parcel</h2>
-            
-            <form action="/track" method="POST">
-                <div class="form-group">
-                    <label for="tracking_id">Enter Tracking ID:</label>
-                    <input type="text" id="tracking_id" name="tracking_id" class="form-control" 
-                           placeholder="e.g., TRK1234567890" required>
-                </div>
-                <button type="submit" class="btn" style="width: 100%;">Track Parcel</button>
-            </form>
-        </div>
-
-        {% if found and parcel %}
-        <div class="tracking-details" style="margin-top: 3rem;">
-            <h2 style="text-align: center; margin-bottom: 2rem;">Tracking Details</h2>
-            
-            <div class="table-container">
-                <table class="table">
-                    <tr>
-                        <th>Tracking ID</th>
-                        <td>{{ parcel.tracking_id }}</td>
-                    </tr>
-                    <tr>
-                        <th>Status</th>
-                        <td>
-                            <span class="status-badge status-{{ parcel.status }}">
-                                {{ parcel.status|upper }}
-                            </span>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th>Sender</th>
-                        <td>{{ parcel.customer_name }}</td>
-                    </tr>
-                    <tr>
-                        <th>Receiver</th>
-                        <td>{{ parcel.receiver_name }}</td>
-                    </tr>
-                    <tr>
-                        <th>Delivery Address</th>
-                        <td>{{ parcel.receiver_address }}</td>
-                    </tr>
-                    <tr>
-                        <th>Expected Delivery</th>
-                        <td>
-                            {% if parcel.delivered_at %}
-                                {{ parcel.delivered_at.strftime('%Y-%m-%d') }}
-                            {% else %}
-                                In Progress
-                            {% endif %}
-                        </td>
-                    </tr>
-                </table>
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            {% if not tracking_id %}
+            <!-- Simple Search -->
+            <div class="text-center p-5 border rounded-3 shadow">
+                <h2>Track Your Order</h2>
+                <p class="text-muted mb-4">Enter your tracking number below</p>
+                <form method="POST">
+                    <div class="input-group" style="max-width: 500px; margin: 0 auto;">
+                        <input type="text" name="tracking_id" class="form-control form-control-lg" 
+                               placeholder="e.g. 1000001" required>
+                        <button class="btn ">Track</button>
+                    </div>
+                </form>
             </div>
+            {% else %}
+            <!-- Tracking Result -->
+            {% if parcel %}
+            <div class="card border-0 shadow-lg">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div>
+                            <h3 class="mb-1">Order #{{ tracking_id }}</h3>
+                            <span class="badge bg-{{ 'success' if parcel.status == 'delivered' else 'warning' if parcel.status == 'out_for_delivery' else 'info' if parcel.status == 'picked_up' else 'secondary' }} fs-5 px-3 py-2">
+                                {{ parcel.status|replace('_', ' ')|title }}
+                            </span><div class="amazon-track">
 
-            <!-- Tracking Timeline -->
-            <div class="timeline" style="margin-top: 3rem;">
-                <h3 style="text-align: center; margin-bottom: 2rem;">Delivery Timeline</h3>
-                
-                {% set statuses = ['booked', 'picked', 'in transit', 'out for delivery', 'delivered'] %}
-                {% for status in statuses %}
-                <div class="timeline-item {% if loop.index % 2 == 0 %}even{% else %}odd{% endif %}">
-                    <h4>{{ status|title }}</h4>
-                    {% if parcel.status.lower() == status or 
-                          (status == 'delivered' and parcel.status.lower() == 'delivered') %}
-                    <p style="color: green;">
-                        <i class="fas fa-check-circle"></i> Completed
-                    </p>
-                    {% elif loop.index0 < statuses.index(parcel.status.lower()) %}
-                    <p style="color: green;">
-                        <i class="fas fa-check-circle"></i> Completed
-                    </p>
-                    {% else %}
-                    <p style="color: gray;">
-                        <i class="fas fa-clock"></i> Pending
-                    </p>
-                    {% endif %}
-                </div>
-                {% endfor %}
-            </div>
+    <div class="progress-line">
+        <div class="progress-fill 
+        {% if parcel.status == 'picked' %}w-25
+        {% elif parcel.status == 'in_transit' %}w-50
+        {% elif parcel.status == 'out_for_delivery' %}w-75
+        {% elif parcel.status == 'delivered' %}w-100
+        {% else %}w-0{% endif %}">
         </div>
-        {% elif found == false %}
-        <div class="alert alert-danger" style="margin-top: 2rem; text-align: center;">
-            <p>Tracking ID not found. Please check and try again.</p>
-        </div>
-        {% endif %}
     </div>
 
-    <footer class="footer">
-        <div class="container">
-            <div class="footer-content">
-                <div class="footer-section">
-                    <h3>FastShip</h3>
-                    <p>Your trusted partner in courier services.</p>
-                </div>
-                <div class="footer-section">
-                    <h3>Contact Info</h3>
-                    <ul>
-                        <li><i class="fas fa-phone"></i> +1 (555) 123-4567</li>
-                        <li><i class="fas fa-envelope"></i> info@fastship.com</li>
-                        <li><i class="fas fa-map-marker-alt"></i> 123 Main Street, City, Country</li>
-                    </ul>
+   <div class="steps">
+
+    <div class="step {% if parcel.status in ['booked','picked','in_transit','out_for_delivery','delivered'] %}active{% endif %}">
+        <div class="circle">✔</div>
+        <p>Ordered</p>
+    </div>
+
+    <div class="step {% if parcel.status in ['picked','in_transit','out_for_delivery','delivered'] %}active{% endif %}">
+        <div class="circle">🚚</div>
+        <p>Shipped</p>
+    </div>
+
+    <div class="step {% if parcel.status in ['out_for_delivery','delivered'] %}active{% endif %}">
+        <div class="circle">📦</div>
+        <p>Out for Delivery</p>
+    </div>
+
+    <div class="step {% if parcel.status == 'delivered' %}active{% endif %}">
+        <div class="circle">✔</div>
+        <p>Delivered</p>
+    </div>
+
+</div></div>
+                        </div>
+                        <button onclick="location.reload()" class="btn btn-outline-secondary">
+                            <i class="fas fa-sync-alt me-1"></i> Refresh
+                        </button>
+                    </div>
+
+                    <!-- Progress Steps -->
+                     <hr>
+<h5 class="mt-4">Shipment History</h5>
+<ul class="list-group list-group-flush">
+    {% for h in parcel.status_history|reverse %}
+    <li class="list-group-item d-flex justify-content-between">
+        <span>
+            <strong>{{ h.status|replace('_',' ')|title }}</strong>
+            <br>
+            <small class="text-muted">
+                {{ h.updated_by or h.note or "System update" }}
+            </small>
+        </span>
+        <small class="text-muted">
+            {{ h.timestamp.strftime('%d %b %Y %I:%M %p') }}
+        </small>
+    </li>
+    {% endfor %}
+</ul>
+
+                    <!-- <div class="order-steps mb-4">
+                        <div class="step-item {{ 'completed' if parcel.status in ['picked_up','out_for_delivery','delivered'] }}">
+                            <div class="step-circle {{ 'active' if parcel.status in ['picked_up','out_for_delivery','delivered'] }}">1</div>
+                            <div class="step-label">Order Placed</div>
+                        </div>
+                        <div class="step-item {{ 'completed' if parcel.status in ['out_for_delivery','delivered'] }}">
+                            <div class="step-circle {{ 'active' if parcel.status in ['picked_up','out_for_delivery','delivered'] }}">2</div>
+                            <div class="step-label">Picked Up</div>
+                        </div>
+                        <div class="step-item {{ 'completed' if parcel.status == 'delivered' }}">
+                            <div class="step-circle {{ 'active' if parcel.status in ['out_for_delivery','delivered'] }}">3</div>
+                            <div class="step-label">Out for Delivery</div>
+                        </div>
+                        <div class="step-item {{ 'completed' if parcel.status == 'delivered' }}">
+                            <div class="step-circle {{ 'active' if parcel.status == 'delivered' }}">4</div>
+                            <div class="step-label">Delivered</div>
+                        </div>
+                    </div> -->
+
+                    <!-- Details -->
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <strong>Receiver:</strong><br>{{ parcel.receiver_name }}<br>
+                            <small class="text-muted">{{ parcel.receiver_phone }}</small>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Weight:</strong> {{ parcel.weight }}kg<br>
+                            <strong>Amount:</strong> ₹{{ parcel.cost }}<br>
+                            <small class="text-muted">{{ parcel.created_at.strftime('%d %b %Y') }}</small>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div class="footer-bottom">
-                <p>&copy; 2024 CourioSys. All rights reserved.</p>
+            {% else %}
+            <!-- Not Found -->
+            <div class="text-center p-5">
+                <i class="fas fa-search fa-3x text-muted mb-4"></i>
+                <h4>Tracking #{{ tracking_id }}</h4>
+                <p class="text-muted mb-4">No parcel found with this tracking number</p>
+                <a href="/track" class="btn">Try Another</a>
             </div>
+            {% endif %}
+            {% endif %}
         </div>
-    </footer>
+    </div>
+</div>
+
+<style>
+.order-steps { 
+    display: flex; 
+    justify-content: space-between; 
+    margin: 2rem 0; 
+    position: relative; 
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+}
+.order-steps::before { 
+    content: ''; 
+    position: absolute; 
+    top: 25px; 
+    left: 12%; 
+    right: 12%; 
+    height: 4px; 
+    background: #e0e0e0; 
+    z-index: 1; 
+}
+.step-item { 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    flex: 1; 
+    position: relative; 
+    z-index: 2; 
+}
+.step-circle { 
+    width: 45px; 
+    height: 45px; 
+    border-radius: 50%; 
+    background: #e0e0e0; 
+    color: #666; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    font-weight: bold; 
+    font-size: 14px;
+    margin-bottom: 8px;
+    transition: all 0.3s ease;
+    border: 3px solid #fff;
+}
+.step-item.completed .step-circle { 
+    background: #28a745; 
+    color: white; 
+}
+.step-circle.active { 
+    background: #007bff; 
+    color: white; 
+    transform: scale(1.1);
+    box-shadow: 0 0 0 4px rgba(0,123,255,0.2);
+}
+.step-label { 
+    font-size: 0.85rem; 
+    text-align: center; 
+    font-weight: 500;
+    min-height: 25px;
+    display: flex;
+    align-items: center;
+}
+.amazon-track {
+    margin: 30px 0;
+    position: relative;
+}
+
+.progress-line {
+    height: 4px;
+    background: #ddd;
+    position: absolute;
+    top: 20px;
+    width: 100%;
+    z-index: 0;
+}
+
+.progress-fill {
+    height: 4px;
+    background: #28a745;
+    width: 0;
+    transition: 0.5s ease;
+}
+
+.steps {
+    display: flex;
+    justify-content: space-between;
+    position: relative;
+}
+
+.step {
+    text-align: center;
+    z-index: 1;
+}
+
+.circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #ddd;
+    color: white;
+    line-height: 40px;
+    margin: auto;
+    font-size: 16px;
+}
+
+.step.active .circle {
+    background: #28a745;
+}
+
+.step p {
+    margin-top: 8px;
+    font-size: 13px;
+}
+.steps {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;   /* 🔥 THIS FIXES TEXT STICKING */
+}
+
+.step {
+    flex: 1;
+    text-align: center;
+}
+
+.step p {
+    margin-top: 8px;
+    font-size: 13px;
+    white-space: nowrap;  /* keeps text proper */
+}
+.circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #ddd;
+    color: white;
+    line-height: 40px;
+    margin: auto;
+    font-size: 16px;
+}
+</style>
 {% endblock %}

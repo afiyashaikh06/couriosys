@@ -1,0 +1,161 @@
+{% extends "layout.html" %}
+{% block title %}Feedback - Customer Panel{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <h2>Customer Panel</h2>
+            <p>Welcome, {{ session.name }}</p>
+        </div>
+      <nav class="sidebar-nav">
+            <ul>
+                <li>
+                    <a href="{{ url_for('customer_dashboard') }}">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('book_parcel') }}">
+                        <i class="fas fa-box"></i>Book New Parcel
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('customer_parcels') }}">
+                        <i class="fas fa-list"></i> My Parcels
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('customer_track') }}">
+                        <i class="fas fa-map-marker-alt"></i> Track Parcel
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('customer_notifications') }}">
+                        <i class="fas fa-bell"></i> Notifications
+                        {% if notifications|selectattr('read', 'equalto', false)|list|length > 0 %}
+                        <span class="notification-badge">
+                            {{ notifications|selectattr('read', 'equalto', false)|list|length }}
+                        </span>
+                        {% endif %}
+                    </a>
+                </li>
+                <li>
+                  <a href="{{ url_for('customer_feedback_panel') }}">
+                        <i class="fas fa-star"></i> Feedback
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('customer_profile') }}">
+                        <i class="fas fa-user"></i> My Profile
+                    </a>
+                </li>
+        
+<a href="{{ url_for('logout') }}" 
+   onclick="return confirm('Are you sure you want to log out?');">
+    <i class="fas fa-sign-out-alt"></i> Logout
+</a>
+
+            </ul>
+        </nav>
+    </aside>
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-lg border-0">
+                <!-- <div class="card-header text-white text-center py-4"> -->
+                    <div class="card-header text-white text-center py-4" style="background:#2c3e50;">
+                    <i class="fas fa-star fa-3x mb-3"></i>
+                    <h2>Share Your Feedback</h2>
+                    <p class="mb-0">Your opinion helps us improve</p>
+                </div>
+                
+                <div class="card-body p-5">
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }} mb-4">
+                                    {{ message }}
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+                    
+                    <form method="POST">
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Rating</label>
+                            <div class="star-rating mt-2" id="ratingStars">
+                                <i class="fas fa-star star" data-value="5"></i>
+                                <i class="fas fa-star star" data-value="4"></i>
+                                <i class="fas fa-star star" data-value="3"></i>
+                                <i class="fas fa-star star" data-value="2"></i>
+                                <i class="fas fa-star star" data-value="1"></i>
+                            </div>
+                            <input type="hidden" name="rating" id="ratingValue" value="3" required>
+                        </div>
+                        
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label">Phone</label>
+                                <input type="tel" class="form-control" name="phone" placeholder="Your phone">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Email</label>
+                                <input type="email" class="form-control" name="email" placeholder="your@email.com">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Service Used</label>
+                            <select class="form-select" name="service">
+                                <option value="">Select Service</option>
+                                <option value="Express">Express Delivery</option>
+                                <option value="Standard">Standard Delivery</option>
+                                <option value="Same Day">Same Day</option>
+                                <option value="Overnight">Overnight</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Comments</label>
+                            <textarea class="form-control" name="comments" rows="4" 
+                                      placeholder="How was your experience?"></textarea>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-success btn-lg w-100">
+                            <i class="fas fa-paper-plane"></i> Submit Feedback
+                        </button>
+                    </form>
+                </div>
+            </div></div>
+        </div>
+    </div>
+</div>
+
+<style>
+.star-rating { font-size: 2rem; cursor: pointer; color: #ddd; }
+.star-rating .star { transition: all 0.2s; margin-right: 5px; }
+.star-rating .star.active { color: #ffc107; }
+.star-rating .star:hover { transform: scale(1.2); }
+</style>
+
+<script>
+    const stars = document.querySelectorAll('.star');
+    const ratingInput = document.getElementById('ratingValue');
+    
+    stars.forEach(star => {
+        star.addEventListener('click', function() {
+            const rating = this.dataset.value;
+            ratingInput.value = rating;
+            
+            stars.forEach(s => {
+                if (s.dataset.value <= rating) {
+                    s.classList.add('active');
+                } else {
+                    s.classList.remove('active');
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

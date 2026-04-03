@@ -10,13 +10,51 @@
         </div>
         <nav class="sidebar-nav">
             <ul>
-                <li><a href="{{ url_for('customer_dashboard') }}"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
-                <li><a href="{{ url_for('book_parcel') }}"><i class="fas fa-box"></i> Book New Parcel</a></li>
-                <li><a href="{{ url_for('customer_parcels') }}" class="active"><i class="fas fa-list"></i> My Parcels</a></li>
-                <li><a href="{{ url_for('customer_track') }}"><i class="fas fa-map-marker-alt"></i> Track Parcel</a></li>
-                <li><a href="{{ url_for('customer_notifications') }}"><i class="fas fa-bell"></i> Notifications</a></li>
-                <li><a href="{{ url_for('customer_profile') }}"><i class="fas fa-user"></i> My Profile</a></li>
-                <li><a href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                <li>
+                    <a href="{{ url_for('customer_dashboard') }}">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('book_parcel') }}">
+                        <i class="fas fa-box"></i>Book New Parcel
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('customer_parcels') }}">
+                        <i class="fas fa-list"></i> My Parcels
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('customer_track') }}">
+                        <i class="fas fa-map-marker-alt"></i> Track Parcel
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('customer_notifications') }}">
+                        <i class="fas fa-bell"></i> Notifications
+                        {% if notifications|selectattr('read', 'equalto', false)|list|length > 0 %}
+                        <span class="notification-badge">
+                            {{ notifications|selectattr('read', 'equalto', false)|list|length }}
+                        </span>
+                        {% endif %}
+                    </a>
+                </li> <li>
+                  <a href="{{ url_for('customer_feedback_panel') }}">
+                        <i class="fas fa-star"></i> Feedback
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('customer_profile') }}">
+                        <i class="fas fa-user"></i> My Profile
+                    </a>
+                </li>
+        
+<a href="{{ url_for('logout') }}" 
+   onclick="return confirm('Are you sure you want to log out?');">
+    <i class="fas fa-sign-out-alt"></i> Logout
+</a>
+
             </ul>
         </nav>
     </aside>
@@ -73,6 +111,36 @@
                 <p><strong>Description:</strong> {{ parcel.description or 'N/A' }}</p>
             </div>
         </div>
+        <div class="card p-3 mt-3">
+    <h6>📍 Handling Branch</h6>
+    <p><strong>Name:</strong> {{ parcel.branch_name or 'Not assigned yet' }}</p>
+    <p><strong>City:</strong> {{ parcel.branch_city or 'NA' }}</p>
+    <p><strong>Address:</strong> {{ parcel.branch_address or 'NA' }}</p>
+    <p><strong>Contact:</strong> {{ parcel.branch_phone or 'NA' }}</p>
+</div>
+
+{% if nearby_branches and nearby_branches|length > 0 %}
+<div class="card p-3 mt-3">
+    <h6>🏢 Nearby Branches</h6>
+    {% for b in nearby_branches %}
+        <div class="border-bottom pb-2 mb-2">
+            <strong>{{ b.name }}</strong><br>
+            {{ b.address }}<br>
+            📞 {{ b.phone or 'NA' }}
+        </div>
+    {% endfor %}
+</div>
+{% endif %}
     </main>
 </div>
 {% endblock %}
+<!-- Only show if can_edit -->
+{% if parcel.can_edit %}
+<div class="mt-3">
+    <a href="{{ url_for('edit_parcel', tracking_id=parcel.tracking_id) }}" 
+       class="btn btn-warning me-2">Edit</a>
+    <a href="{{ url_for('cancel_parcel', tracking_id=parcel.tracking_id) }}" 
+       class="btn btn-danger" 
+       onclick="return confirm('Cancel?')">Cancel</a>
+</div>
+{% endif %}

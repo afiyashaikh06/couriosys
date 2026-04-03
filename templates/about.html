@@ -1,180 +1,167 @@
 {% extends "layout.html" %}
 
-{% block title %}About Us - Courier Management System{% endblock %}
+{% block title %}About Us - CourioSys{% endblock %}
 
 {% block content %}
-    <!-- Navbar -->
-    <nav class="navbar">
-        <div class="container">
-            <a href="/" class="logo">CourioSys</a>
-            <ul class="nav-links">
-                <li><a href="/">Home</a></li>
-                <li><a href="/about" class="active">About Us</a></li>
-                <li><a href="/track">Track Parcel</a></li>
-                {% if 'user_id' in session %}
-                    <li><a href="/customer/dashboard">Dashboard</a></li>
-                    <li><a href="/logout" class="btn">Logout</a></li>
-                {% else %}
-                    <li><a href="/signup" class="btn">Sign Up</a></li>
-                    <li><a href="/login" class="btn">Login</a></li>
-                {% endif %}
-            </ul>
-        </div>
-    </nav>
 
-    <!-- About Hero Section -->
-    <section class="about-hero">
-        <div class="container">
-            <h1>About FastShip</h1>
-            <p>Delivering excellence since 2024</p>
-        </div>
-    </section>
+<!-- NAVBAR -->
+<nav class="navbar">
+    <div class="container nav-flex">
+        <h2 class="logo">CourioSys</h2>
 
-    <!-- Our Story -->
-    <section class="story-section">
-        <div class="container">
-            <div class="story-content">
-                <h2>Our Story</h2>
-                <p>Founded in 2024, FastShip started with a simple mission: to make parcel delivery faster, safer, and more reliable. What began as a small local courier service has grown into a trusted nationwide delivery network.</p>
-                <p>Today, we serve thousands of customers daily, from individuals sending gifts to businesses shipping products. Our commitment remains the same - to deliver your parcels with care, speed, and reliability.</p>
-            </div>
-            <div class="story-image">
-                <img src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?ixlib=rb-4.0.3&auto=format&fit=crop&w=1350&q=80" alt="Our Delivery Team">
-            </div>
-        </div>
-    </section>
+        <ul class="nav-links">
+            <li><a href="/">Home</a></li>
+            <li><a href="/about" class="active">About Us</a></li>
+            <li><a href="/track">Track Parcel</a></li>
 
-    <!-- Our Mission -->
-    <section class="mission-section">
-        <div class="container">
-            <div class="mission-card">
-                <i class="fas fa-bullseye"></i>
-                <h3>Our Mission</h3>
-                <p>To revolutionize parcel delivery through technology, transparency, and exceptional customer service.</p>
-            </div>
-            <div class="mission-card">
-                <i class="fas fa-eye"></i>
-                <h3>Our Vision</h3>
-                <p>To become the most trusted courier service provider by ensuring 100% customer satisfaction.</p>
-            </div>
-            <div class="mission-card">
-                <i class="fas fa-handshake"></i>
-                <h3>Our Values</h3>
-                <p>Reliability, Speed, Security, and Innovation guide everything we do.</p>
-            </div>
-        </div>
-    </section>
-
-    <!-- Why Choose Us -->
-    <section class="why-section">
-        <div class="container">
-            <h2>Why Choose FastShip?</h2>
-            <div class="reasons-grid">
-                <div class="reason-card">
-                    <div class="reason-number">01</div>
-                    <h3>Real-time Tracking</h3>
-                    <p>Track your parcel at every step with our advanced tracking system. Know exactly where your package is, 24/7.</p>
-                </div>
-                <div class="reason-card">
-                    <div class="reason-number">02</div>
-                    <h3>Fast Delivery</h3>
-                    <p>Express delivery options with guaranteed timelines. We deliver when we promise.</p>
-                </div>
-                <div class="reason-card">
-                    <div class="reason-number">03</div>
-                    <h3>Secure Handling</h3>
-                    <p>Your parcels are handled with utmost care and security. We treat every package as if it were our own.</p>
-                </div>
-                <div class="reason-card">
-                    <div class="reason-number">04</div>
-                    <h3>24/7 Support</h3>
-                    <p>Round-the-clock customer support. We're here to help whenever you need us.</p>
-                </div>
-                <div class="reason-card">
-                    <div class="reason-number">05</div>
-                    <h3>Affordable Pricing</h3>
-                    <p>Competitive rates without compromising on service quality. Transparent pricing with no hidden charges.</p>
-                </div>
-                <div class="reason-card">
-                    <div class="reason-number">06</div>
-                    <h3>Nationwide Coverage</h3>
-                    <p>We deliver to every corner of the country, from metropolitan cities to remote villages.</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Stats Section -->
-    <section class="stats-section">
-        <div class="container">
-            <div class="stat-item">
-                <h3>50,000+</h3>
-                <p>Deliveries Completed</p>
-            </div>
-            <div class="stat-item">
-                <h3>99.2%</h3>
-                <p>On-time Delivery Rate</p>
-            </div>
-            <div class="stat-item">
-                <h3>10,000+</h3>
-                <p>Happy Customers</p>
-            </div>
-            <div class="stat-item">
-                <h3>500+</h3>
-                <p>Cities Served</p>
-            </div>
-        </div>
-    </section>
-
-    <!-- Team Section -->
-    <section class="team-section">
-        <div class="container">
-            <h2>Meet Our Leadership</h2>
-            <div class="team-grid">
-                <div class="team-member">
-                    <div class="member-image">
-                        <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80" alt="CEO">
-                    </div>
-                    <h3>Alex Johnson</h3>
-                    <p>CEO & Founder</p>
-                </div>
-                <div class="team-member">
-                    <div class="member-image">
-                        <img src="https://images.unsplash.com/photo-1580489944761-15a19d654956?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80" alt="Operations Head">
-                    </div>
-                    <h3>Sarah Miller</h3>
-                    <p>Head of Operations</p>
-                </div>
-                <div class="team-member">
-                    <div class="member-image">
-                        <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80" alt="CTO">
-                    </div>
-                    <h3>Michael Chen</h3>
-                    <p>Chief Technology Officer</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- CTA Section -->
-    <section class="cta-section">
-        <div class="container">
-            <h2>Ready to Ship with Us?</h2>
-            <p>Join thousands of satisfied customers who trust us with their deliveries.</p>
             {% if 'user_id' in session %}
-                <a href="/customer/book" class="btn btn-large">Book a Parcel</a>
+                <li><a href="/customer/dashboard">Dashboard</a></li>
+                <li><a href="/logout" class="btn">Logout</a></li>
             {% else %}
-                <a href="/signup" class="btn btn-large">Get Started</a>
+                <li><a href="/signup" class="btn">Sign Up</a></li>
+                <li><a href="/login" class="btn">Login</a></li>
             {% endif %}
-        </div>
-    </section>
+        </ul>
+    </div>
+</nav>
 
-    <!-- Footer -->
+<!-- HERO -->
+<section class="hero">
+    <div class="container">
+        <h1>About CourioSys</h1>
+        <p>Smart, reliable and efficient courier management system</p>
+    </div>
+</section>
+
+<!-- ABOUT -->
+<section class="section">
+    <div class="container grid-2">
+        <div>
+            <h2>Who We Are</h2>
+            <p>
+                CourioSys is a courier management system designed to simplify parcel booking, tracking,
+                and delivery operations. It connects customers, staff, and administrators on a single platform.
+            </p>
+            <p>
+                Our system ensures smooth parcel flow from sender to receiver with real-time updates,
+                efficient staff assignment, and accurate tracking.
+            </p>
+        </div>
+
+        <div>
+            <img src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d"
+                 alt="Warehouse"
+                 class="about-img">
+        </div>
+    </div>
+</section>
+
+<!-- FEATURES -->
+<section class="section light">
+    <div class="container">
+        <h2 class="center">Key Features</h2>
+
+        <div class="grid-3">
+            <div class="card">
+                <h3>Parcel Booking</h3>
+                <p>Easy booking with sender and receiver details.</p>
+            </div>
+
+            <div class="card">
+                <h3>Real-time Tracking</h3>
+                <p>Track parcel status at every stage.</p>
+            </div>
+
+            <div class="card">
+                <h3>Auto Staff Assignment</h3>
+                <p>System assigns staff based on branch.</p>
+            </div>
+
+            <div class="card">
+                <h3>Branch Management</h3>
+                <p>Organized handling of parcels via branches.</p>
+            </div>
+
+            <div class="card">
+                <h3>Secure Delivery</h3>
+                <p>Safe and reliable parcel handling.</p>
+            </div>
+
+            <div class="card">
+                <h3>Admin Dashboard</h3>
+                <p>Complete control and analytics for admin.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- STATS -->
+<!-- <section class="section">
+    <div class="container grid-4 center">
+        <div>
+            <h2>50K+</h2>
+            <p>Parcels Delivered</p>
+        </div>
+        <div>
+            <h2>99%</h2>
+            <p>Success Rate</p>
+        </div>
+        <div>
+            <h2>10K+</h2>
+            <p>Customers</p>
+        </div>
+        <div>
+            <h2>24/7</h2>
+            <p>Support</p>
+        </div>
+    </div>
+</section> -->
+<section class="section">
+    <div class="container stats">
+
+        <div class="stat-box">
+            <h2>{{ total_parcels }}</h2>
+            <p>Parcels Delivered</p>
+        </div>
+
+        <div class="stat-box">
+            <h2>99%</h2>
+            <p>Success Rate</p>
+        </div>
+
+        <div class="stat-box">
+            <h2>{{ total_customers }}</h2>
+            <p>Customers</p>
+        </div>
+
+        <div class="stat-box">
+            <h2>24/7</h2>
+            <p>Support</p>
+        </div>
+
+    </div>
+</section>
+
+<!-- CTA -->
+<section class="cta">
+    <div class="container center">
+        <h2>Start Shipping Today</h2>
+        <p>Fast, simple and reliable parcel delivery system</p>
+
+        {% if 'user_id' in session %}
+            <a href="/customer/book" class="btn">Book Parcel</a>
+        {% else %}
+            <a href="/signup" class="btn">Get Started</a>
+        {% endif %}
+    </div>
+</section>
+
+<!-- Footer -->
     <footer class="footer">
         <div class="container">
             <div class="footer-content">
                 <div class="footer-section">
-                    <h3>FastShip</h3>
+                    <h3>CourioSys</h3>
                     <p>Your trusted partner in courier services. Delivering happiness, one parcel at a time.</p>
                 </div>
                 <div class="footer-section">
@@ -190,15 +177,166 @@
                 <div class="footer-section">
                     <h3>Contact Info</h3>
                     <ul>
-                        <li><i class="fas fa-phone"></i> +1 (555) 123-4567</li>
-                        <li><i class="fas fa-envelope"></i> info@fastship.com</li>
-                        <li><i class="fas fa-map-marker-alt"></i> 123 Main Street, City, Country</li>
+                        <li><i class="fas fa-phone"></i> +91 7304183228</li>
+                        <li><i class="fas fa-envelope"></i> info@Couriosys.com</li>
+<li><i class="fas fa-map-marker-alt"></i> Mumbai Branch: 123 Main Street, Mumbai</li>
+<li><i class="fas fa-map-marker-alt"></i> Chennai Branch: 45 Anna Salai, Chennai</li>
                     </ul>
                 </div>
             </div>
             <div class="footer-bottom">
-                <p>&copy; 2024 CourioSys. All rights reserved.</p>
+                <p>&copy; 2025 CourioSys. All rights reserved.</p>
             </div>
         </div>
     </footer>
+
+<!-- STYLES -->
+<style>
+
+.container {
+    width: 90%;
+    margin: auto;
+    max-width: 1200px;
+}
+
+.nav-flex {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.navbar {
+    background: #2c3e50;
+    color: white;
+    padding: 15px 0;
+}
+
+.nav-links {
+    display: flex;
+    gap: 20px;
+    list-style: none;
+}
+
+.nav-links a {
+    color: white;
+    text-decoration: none;
+}
+
+.hero {
+    background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)),
+                url('https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d');
+    background-size: cover;
+    background-position: center;
+    color: white;
+    padding: 100px 20px;
+    text-align: center;
+}
+
+.section {
+    padding: 60px 0;
+}
+
+.section.light {
+    background: #f9f9f9;
+}
+
+.grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    align-items: center;
+}
+
+.about-img {
+    width: 100%;
+    border-radius: 12px;
+}
+
+.grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+}
+
+.grid-4 {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+}
+
+.card {
+    padding: 20px;
+    border: 1px solid #eee;
+    border-radius: 10px;
+    background: white;
+}
+
+.center {
+    text-align: center;
+}
+
+.btn {
+    padding: 10px 20px;
+    background: #3498db;
+    color: white;
+    border-radius: 5px;
+    text-decoration: none;
+}
+
+.btn:hover {
+    background: #2980b9;
+}
+
+.cta {
+    background: #0c314a;
+    color: white;
+    padding: 40px 0;
+}
+
+.footer {
+    background: #2c3e50;
+    color: #ecf0f1;
+    padding: 40px 0 20px;
+}
+
+.footer-content {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 30px;
+}
+
+.footer a {
+    color: #ecf0f1;
+    text-decoration: none;
+}
+
+.footer-bottom {
+    text-align: center;
+    margin-top: 20px;
+    border-top: 1px solid rgba(255,255,255,0.2);
+    padding-top: 10px;
+}
+.stats {
+    display: flex;
+    justify-content: space-between;
+    text-align: center;
+    flex-wrap: wrap;
+}
+
+.stat-box {
+    flex: 1;
+    min-width: 200px;
+    padding: 20px;
+}
+
+.stat-box h2 {
+    font-size: 2.5rem;
+    color: #2c3e50;
+}
+
+.stat-box p {
+    margin-top: 5px;
+    color: #555;
+}
+</style>
+
 {% endblock %}

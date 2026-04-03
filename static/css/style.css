@@ -1513,3 +1513,227 @@ body {
     font-size: 0.7rem;
     font-weight: 600;
 }
+.analytics-tabs .btn-group .btn {
+    flex: 1;
+    border-radius: 8px 0 0 8px;
+}
+
+.analytics-tabs .btn-group .btn:last-child {
+    border-radius: 0 8px 8px 0;
+}
+
+.analytics-tabs .btn.active {
+    background: #2c3e50;
+    border-color: #2c3e50;
+}
+
+.analytics-content {
+    display: none;
+}
+
+.analytics-content.active {
+    display: block;
+}
+
+.analytics-card {
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+canvas {
+    max-height: 350px !important;
+    height: 300px !important;
+}
+.report-content {
+    position: relative;
+    height: 400px;
+}
+/* ===== DASHBOARD NAVBAR ===== */
+.dashboard-navbar {
+    height: 60px;
+    background: white;
+    border-bottom: 1px solid #e0e0e0;
+    padding: 0 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.dashboard-navbar .app-title {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.navbar-right {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.user-name {
+    font-weight: 500;
+    color: #333;
+}
+
+.branch-name {
+    font-size: 0.85rem;
+    color: #6c757d;
+}
+.sidebar-dropdown > a {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+}
+
+.sidebar-submenu {
+    display: none;
+    padding-left: 20px;
+}
+
+.sidebar-dropdown:hover .sidebar-submenu {
+    display: block;
+}
+
+.sidebar-submenu li a {
+    font-size: 14px;
+    padding: 6px 0;
+    display: block;
+}
+.dashboard {
+    display: flex;
+    min-height: 100vh;
+}
+
+.sidebar {
+    width: 250px;
+    background: #1f2937;
+    color: #fff;
+    padding: 20px;
+}
+
+.sidebar a {
+    color: #e5e7eb;
+    text-decoration: none;
+    display: block;
+    padding: 10px;
+}
+
+.sidebar a:hover,
+.sidebar a.active {
+    background: #374151;
+    border-radius: 6px;
+}
+
+.sidebar-dropdown > a {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.sidebar-submenu {
+    display: none;
+    padding-left: 15px;
+}
+
+.sidebar-dropdown:hover .sidebar-submenu {
+    display: block;
+}
+
+.main-wrapper {
+    flex: 1;
+    background: #f9fafb;
+    padding: 25px;
+}
+.table td form {
+    margin-bottom: 0;
+}
+
+.btn {
+    font-weight: 500;
+}
+
+.badge {
+    font-size: 0.85rem;
+    padding: 6px 10px;
+}
+.modal-backdrop {
+    z-index: 1040 !important;
+}
+
+.modal {
+    z-index: 1050 !important;
+}
+
+.sidebar {
+    z-index: 1000;
+}
+/* imp */
+.password-wrapper {
+  position: relative;
+}
+
+.password-wrapper input {
+  padding-right: 40px;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  color: #666;
+}
+
+.password-toggle:hover {
+  color: #000;
+}
+
+.auth-wrapper {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f4f7fb;
+}
+
+.auth-container {
+  width: 100%;
+  max-width: 420px;
+  background: #fff;
+  padding: 30px 28px;
+  border-radius: 10px;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+}
+
+.auth-container h2 {
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.auth-container p {
+  text-align: center;
+  color: #666;
+  font-size: 14px;
+}
+
+.password-wrapper {
+  position: relative;
+}
+
+.password-wrapper input {
+  padding-right: 40px;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 12px;
+  top: 38px;
+  cursor: pointer;
+  color: #888;
+}
+
+.password-toggle:hover {
+  color: #000;
+}

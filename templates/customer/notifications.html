@@ -7,10 +7,10 @@
     <!-- Sidebar -->
     <aside class="sidebar">
         <div class="sidebar-header">
-            <h2>Customer Panel</h2>
+           
             <p>Welcome, {{ session.name }}</p>
         </div>
-        <nav class="sidebar-nav">
+      <nav class="sidebar-nav">
             <ul>
                 <li>
                     <a href="{{ url_for('customer_dashboard') }}">
@@ -33,7 +33,7 @@
                     </a>
                 </li>
                 <li>
-                    <a href="{{ url_for('customer_notifications') }}" class="active">
+                    <a href="{{ url_for('customer_notifications') }}">
                         <i class="fas fa-bell"></i> Notifications
                         {% if notifications|selectattr('read', 'equalto', false)|list|length > 0 %}
                         <span class="notification-badge">
@@ -42,16 +42,22 @@
                         {% endif %}
                     </a>
                 </li>
+                 <li>
+                  <a href="{{ url_for('customer_feedback_panel') }}">
+                        <i class="fas fa-star"></i> Feedback
+                    </a>
+                </li>
                 <li>
                     <a href="{{ url_for('customer_profile') }}">
                         <i class="fas fa-user"></i> My Profile
                     </a>
                 </li>
-                <li>
-                    <a href="{{ url_for('logout') }}">
-                        <i class="fas fa-sign-out-alt"></i> Logout
-                    </a>
-                </li>
+        
+<a href="{{ url_for('logout') }}" 
+   onclick="return confirm('Are you sure you want to log out?');">
+    <i class="fas fa-sign-out-alt"></i> Logout
+</a>
+
             </ul>
         </nav>
     </aside>

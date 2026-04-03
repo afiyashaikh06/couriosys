@@ -32,6 +32,7 @@
                     <input type="password" id="password" name="password" class="form-control" 
                            placeholder="Enter your password" required>
                 </div>
+             
                 
                 <div class="form-group" style="display: flex; align-items: center; gap: 0.5rem;">
                     <input type="checkbox" id="remember" name="remember">
@@ -44,36 +45,50 @@
             <div style="text-align: center; margin-top: 1rem;">
                 <p>Don't have an account? <a href="/signup">Sign up here</a></p>
             </div>
-            
-            <div style="margin-top: 2rem; padding: 1rem; background-color: #f8f9fa; border-radius: 5px;">
+            <a href="{{ url_for('forgot_password') }}">Forgot Password?</a>
+
+            <!-- <div style="margin-top: 2rem; padding: 1rem; background-color: #f8f9fa; border-radius: 5px;">
                 <p style="margin: 0; font-size: 0.9rem; color: #666;">
                     <strong>Demo Accounts:</strong><br>
                     Admin: admin@parcel.com / admin123<br>
                     Customer: Use signup form
                 </p>
-            </div>
+            </div> -->
         </div>
     </div>
 
+   <!-- Footer -->
     <footer class="footer">
         <div class="container">
             <div class="footer-content">
                 <div class="footer-section">
-                    <h3>FastShip</h3>
-                    <p>Your trusted partner in courier services.</p>
+                    <h3>CourioSys</h3>
+                    <p>Your trusted partner in courier services. Delivering happiness, one parcel at a time.</p>
+                </div>
+                <div class="footer-section">
+                    <h3>Quick Links</h3>
+                    <ul>
+                        <li><a href="/">Home</a></li>
+                        <li><a href="/about">About Us</a></li>
+                        <li><a href="/track">Track Parcel</a></li>
+                        <li><a href="/login">Login</a></li>
+                        <li><a href="/signup">Sign Up</a></li>
+                    </ul>
                 </div>
                 <div class="footer-section">
                     <h3>Contact Info</h3>
                     <ul>
-                        <li><i class="fas fa-phone"></i> +1 (555) 123-4567</li>
-                        <li><i class="fas fa-envelope"></i> info@fastship.com</li>
-                        <li><i class="fas fa-map-marker-alt"></i> 123 Main Street, City, Country</li>
+                        <li><i class="fas fa-phone"></i> +91 7304183228</li>
+                        <li><i class="fas fa-envelope"></i> info@Couriosys.com</li>
+<li><i class="fas fa-map-marker-alt"></i> Mumbai Branch: 123 Main Street, Mumbai</li>
+<li><i class="fas fa-map-marker-alt"></i> Chennai Branch: 45 Anna Salai, Chennai</li>
                     </ul>
                 </div>
             </div>
             <div class="footer-bottom">
-                <p>&copy; 2024 FastShip Courier Management System. All rights reserved.</p>
+                <p>&copy; 2025 CourioSys. All rights reserved.</p>
             </div>
         </div>
     </footer>
+    
 {% endblock %}

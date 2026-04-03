@@ -141,29 +141,58 @@ function togglePassword(inputId) {
     input.setAttribute('type', type);
 }
 
-// function toggleDropdown() {
-//     const dropdown = document.getElementById('userDropdown');
-//     const arrow = document.querySelector('.dropdown-arrow');
-//     dropdown.classList.toggle('show');
-//     arrow.style.transform = dropdown.classList.contains('show') ? 'rotate(180deg)' : 'rotate(0)';
-// }
-
-// // Close dropdown when clicking outside
-// document.addEventListener('click', function(event) {
-//     const dropdown = document.getElementById('userDropdown');
-//     const userInfo = document.querySelector('.user-info');
+// REAL DATA CHARTS
+function updateOverviewChart(data) {
+    const ctx = document.getElementById('overviewChart').getContext('2d');
+    if (window.overviewChart) window.overviewChart.destroy();
     
-//     if (!userInfo.contains(event.target) && !dropdown.contains(event.target)) {
-//         dropdown.classList.remove('show');
-//         document.querySelector('.dropdown-arrow').style.transform = 'rotate(0)';
-//     }
-// });
+    window.overviewChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Booked', 'In Transit', 'Delivered'],
+            datasets: [{
+                data: data.status_chart,  // ← YOUR REAL DATA!
+                backgroundColor: ['#f39c12', '#3498db', '#27ae60']
+            }]
+        }
+    });
+}
+async function updateLiveData() {
+    const res = await fetch('/api/admin/stats');
+    const data = await res.json();
+    
+    // UPDATE KPIS (Real numbers)
+    document.querySelectorAll('.kpi-value')[0].textContent = data.total_customers;
+    document.querySelectorAll('.kpi-value')[1].textContent = data.active_staff;
+    document.querySelectorAll('.kpi-value')[2].textContent = data.total_parcels;
+    document.querySelectorAll('.kpi-value')[3].textContent = data.pending_count;
+    
+    // UPDATE CHARTS (Real data)
+    updateOverviewChart(data);
+    
+    console.log('LIVE DATA:', data); // Check real numbers
+}
 
-// // Close dropdown when pressing Escape key
-// document.addEventListener('keydown', function(event) {
-//     if (event.key === 'Escape') {
-//         const dropdown = document.getElementById('userDropdown');
-//         dropdown.classList.remove('show');
-//         document.querySelector('.dropdown-arrow').style.transform = 'rotate(0)';
-//     }
-// });
+// EVERY 3 SECONDS
+setInterval(updateLiveData, 3000);
+
+
+
+{/* <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script> */}
+
+function togglePassword(inputId, icon) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+
+  if (input.type === "password") {
+    input.type = "text";
+    icon.classList.remove("fa-eye");
+    icon.classList.add("fa-eye-slash");
+  } else {
+    input.type = "password";
+    icon.classList.remove("fa-eye-slash");
+    icon.classList.add("fa-eye");
+  }
+}
+

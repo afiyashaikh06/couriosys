@@ -1,0 +1,23 @@
+<nav class="dashboard-navbar">
+    <div class="navbar-left">
+        <h4 class="app-title">Courio Logistics</h4>
+    </div>
+
+    <div class="navbar-right">
+        <span class="user-name">
+            <i class="fas fa-user-circle"></i> {{ session.name }}
+        </span>
+
+        {% if session.role == 'staff' %}
+            <span class="branch-name">
+                📍 {{ session.branch_name }}
+            </span>
+        {% endif %}
+
+        <a href="{{ url_for('logout') }}"
+           class="btn"
+           onclick="return confirm('Logout?');">
+            Logout
+        </a>
+    </div>
+</nav>

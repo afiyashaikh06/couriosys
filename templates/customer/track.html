@@ -9,7 +9,7 @@
             <h2>Customer Panel</h2>
             <p>Welcome, {{ session.name }}</p>
         </div>
-        <nav class="sidebar-nav">
+         <nav class="sidebar-nav">
             <ul>
                 <li>
                     <a href="{{ url_for('customer_dashboard') }}">
@@ -32,7 +32,7 @@
                     </a>
                 </li>
                 <li>
-                    <a href="{{ url_for('customer_notifications') }}" class="active">
+                    <a href="{{ url_for('customer_notifications') }}">
                         <i class="fas fa-bell"></i> Notifications
                         {% if notifications|selectattr('read', 'equalto', false)|list|length > 0 %}
                         <span class="notification-badge">
@@ -40,17 +40,22 @@
                         </span>
                         {% endif %}
                     </a>
+                </li> <li>
+                  <a href="{{ url_for('customer_feedback_panel') }}">
+                        <i class="fas fa-star"></i> Feedback
+                    </a>
                 </li>
                 <li>
                     <a href="{{ url_for('customer_profile') }}">
                         <i class="fas fa-user"></i> My Profile
                     </a>
                 </li>
-                <li>
-                    <a href="{{ url_for('logout') }}">
-                        <i class="fas fa-sign-out-alt"></i> Logout
-                    </a>
-                </li>
+        
+<a href="{{ url_for('logout') }}" 
+   onclick="return confirm('Are you sure you want to log out?');">
+    <i class="fas fa-sign-out-alt"></i> Logout
+</a>
+
             </ul>
         </nav>
     </aside>
@@ -99,10 +104,17 @@
                             {{ parcel.created_at.strftime('%Y-%m-%d %H:%M') }}
                             {% endif %}
                         </td>
-                        <td>
+                        <!-- <td>
                             <a href="/track?tracking_id={{ parcel.tracking_id }}" 
                                class="btn" style="padding: 0.3rem 0.8rem;">View Details</a>
-                        </td>
+                        </td> -->
+                        <td>
+    <a href="/track?tracking_id={{ parcel.tracking_id }}" 
+       class="btn" style="padding: 0.3rem 0.8rem;">
+        <i class="fas fa-search me-1"></i> Track Live
+    </a>
+</td>
+
                     </tr>
                     {% endfor %}
                 </tbody>

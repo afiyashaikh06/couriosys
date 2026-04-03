@@ -1,0 +1,174 @@
+{% extends "layout.html" %}
+{% block title %}Customer Feedback{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8 col-xl-6">
+            <!-- FEEDBACK CARD -->
+            <div class="card shadow-lg border-0 rounded-4 overflow-hidden">
+                <div class="card-header bg-gradient text-white text-center py-5" 
+                     style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    <div class="mb-4">
+                        <i class="fas fa-star fa-3x"></i>
+                    </div>
+                    <h1 class="display-5 fw-bold mb-2">Your Feedback Matters!</h1>
+                    <p class="lead mb-0 opacity-90">Help us serve you better</p>
+                </div>
+                
+                <div class="card-body p-5">
+                    <form method="POST" id="feedbackForm">
+                        <!-- RATING STARS -->
+                        <div class="text-center mb-5">
+                            <label class="form-label h4 fw-bold mb-3 d-block">How would you rate us?</label>
+                            <div class="star-rating fs-1 mb-3" id="ratingStars">
+                                <i class="far fa-star star me-2" data-value="5"></i>
+                                <i class="far fa-star star me-2" data-value="4"></i>
+                                <i class="far fa-star star me-2" data-value="3"></i>
+                                <i class="far fa-star star me-2" data-value="2"></i>
+                                <i class="far fa-star star me-2" data-value="1"></i>
+                            </div>
+                            <input type="hidden" name="rating" id="ratingValue" value="3" required>
+                            <div id="ratingText" class="mt-2 fw-semibold text-muted">Click a star to rate</div>
+                        </div>
+
+                        <!-- CONTACT INFO -->
+                        <div class="row g-4 mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Full Name</label>
+                                <input type="text" class="form-control form-control-lg" name="name" 
+                                       placeholder="Enter your name" value="{{ request.form.name if request.form else '' }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Phone</label>
+                                <input type="tel" class="form-control form-control-lg" name="phone" 
+                                       placeholder="10-digit phone" value="{{ request.form.phone if request.form else '' }}">
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">Email (Optional)</label>
+                            <input type="email" class="form-control form-control-lg" name="email" 
+                                   placeholder="your@email.com" value="{{ request.form.email if request.form else '' }}">
+                        </div>
+
+                        <!-- SERVICE TYPE -->
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">Service Used</label>
+                            <select class="form-select form-select-lg" name="service">
+                                <option value="">Choose service type</option>
+                                <option value="Express" {{ 'selected' if request.form.service == 'Express' }}>Express Delivery</option>
+                                <option value="Standard" {{ 'selected' if request.form.service == 'Standard' }}>Standard Delivery</option>
+                                <option value="Same Day" {{ 'selected' if request.form.service == 'Same Day' }}>Same Day</option>
+                                <option value="Overnight" {{ 'selected' if request.form.service == 'Overnight' }}>Overnight</option>
+                            </select>
+                        </div>
+
+                        <!-- COMMENTS -->
+                        <div class="mb-5">
+                            <label class="form-label fw-semibold">Your Comments</label>
+                            <textarea class="form-control" name="comments" rows="5" 
+                                      placeholder="Tell us about your experience with our service... (driver behavior, delivery time, parcel condition, etc.)"
+                                      style="resize: vertical;">{{ request.form.comments if request.form else '' }}</textarea>
+                        </div>
+
+                        <!-- SUBMIT BUTTON -->
+                        <button type="submit" class="btn btn-success btn-lg w-100 py-3 fw-bold fs-5 shadow-lg">
+                            <i class="fas fa-paper-plane me-2"></i>
+                            Submit Feedback
+                        </button>
+                    </form>
+                </div>
+                
+                <!-- SUCCESS MESSAGE -->
+                <div class="card-footer bg-success text-white text-center py-4 d-none" id="successMsg">
+                    <div class="mb-4">
+                        <i class="fas fa-check-circle fa-4x"></i>
+                    </div>
+                    <h2 class="display-6 fw-bold mb-3">Thank You! 🎉</h2>
+                    <p class="lead mb-4">Your feedback has been submitted successfully.</p>
+                    <a href="{{ url_for('index') }}" class="btn btn-light btn-lg px-5">
+                        <i class="fas fa-home me-2"></i>Back to Home
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const stars = document.querySelectorAll('.star');
+    const ratingInput = document.getElementById('ratingValue');
+    const ratingText = document.getElementById('ratingText');
+    const form = document.getElementById('feedbackForm');
+    const successMsg = document.getElementById('successMsg');
+    
+    // Star rating functionality
+    stars.forEach(star => {
+        star.addEventListener('click', function() {
+            const rating = parseInt(this.dataset.value);
+            ratingInput.value = rating;
+            
+            // Update visual stars
+            stars.forEach((s, index) => {
+                if (index < rating) {
+                    s.classList.remove('far');
+                    s.classList.add('fas', 'text-warning');
+                } else {
+                    s.classList.remove('fas', 'text-warning');
+                    s.classList.add('far');
+                }
+            });
+            
+            // Update rating text
+            const texts = {
+                5: 'Excellent! Thank you 😊',
+                4: 'Great! Appreciate it 👍',
+                3: 'Good',
+                2: 'Could be better',
+                1: 'Needs improvement'
+            };
+            ratingText.textContent = texts[rating] || 'Click a star to rate';
+            ratingText.className = 'mt-2 fw-semibold';
+        });
+        
+        // Hover effect
+        star.addEventListener('mouseenter', function() {
+            const rating = parseInt(this.dataset.value);
+            stars.forEach((s, index) => {
+                if (index < rating) {
+                    s.classList.remove('far');
+                    s.classList.add('fas', 'text-warning');
+                }
+            });
+        });
+    });
+    
+    // Reset stars on mouse leave
+    document.getElementById('ratingStars').addEventListener('mouseleave', function() {
+        const rating = parseInt(ratingInput.value);
+        stars.forEach((s, index) => {
+            if (index < rating) {
+                s.classList.remove('far');
+                s.classList.add('fas', 'text-warning');
+            } else {
+                s.classList.remove('fas', 'text-warning');
+                s.classList.add('far');
+            }
+        });
+    });
+    
+    // Form submission
+    form.addEventListener('submit', function(e) {
+        if (parseInt(ratingInput.value) === 0) {
+            e.preventDefault();
+            alert('Please select a rating by clicking on the stars.');
+            return false;
+        }
+    });
+});
+</script>
+{% endblock %}
